@@ -64,7 +64,7 @@ deploy-check: ## Wait for the deployed API to answer through the web container
 	@ssh $(VPS) 'for i in $$(seq 1 60); do curl -fsS http://172.18.0.1:8040/api/health && echo && exit 0; sleep 2; done; echo "health check failed" >&2; exit 1'
 
 deploy-domain: ## One-time: route DOMAIN to Half CA via the VPS's shared Caddy
-	@getent hosts $(DOMAIN) >/dev/null || { echo "$(DOMAIN) has no DNS record yet (add A -> 200.141.7.5)"; exit 1; }
+	@ssh $(VPS) getent hosts $(DOMAIN) >/dev/null || { echo "$(DOMAIN) has no DNS record yet (add A -> 200.141.7.5)"; exit 1; }
 	ssh $(VPS) bash -s -- $(DOMAIN) < deploy/route-domain.sh
 
 deploy-logs: ## Tail the VPS containers' logs
