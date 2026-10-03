@@ -1,0 +1,129 @@
+{
+  "_note": "Shared by the generator, the physical-trail engine and the Goods map. SVG coordinates live in a 860x600 viewBox. 'frac' is the position along the SVG path (for drawing); 'km' is the road distance from the route origin (for the engine). Synthetic geography, loosely modelled on north India.",
+  "viewBox": [860, 600],
+  "cities": [
+    { "name": "Delhi", "state_code": "07", "x": 370, "y": 320, "hub": true },
+    { "name": "Ludhiana", "state_code": "03", "x": 180, "y": 95, "hub": true },
+    { "name": "Ambala", "state_code": "06", "x": 272.3, "y": 157.4 },
+    { "name": "Karnal", "state_code": "06", "x": 321.6, "y": 229.4 },
+    { "name": "Moradabad", "state_code": "09", "x": 540, "y": 250, "hub": true },
+    { "name": "Jaipur", "state_code": "08", "x": 215, "y": 470, "hub": true },
+    { "name": "Kanpur", "state_code": "09", "x": 720, "y": 510, "hub": true },
+    { "name": "Agra", "state_code": "09", "x": 503.3, "y": 462.1 },
+    { "name": "Lucknow", "state_code": "09", "x": 770, "y": 420 },
+    { "name": "Sonipat", "state_code": "06", "x": 352, "y": 288, "minor": true },
+    { "name": "Ghaziabad", "state_code": "09", "x": 398, "y": 312, "minor": true },
+    { "name": "Noida", "state_code": "09", "x": 392, "y": 334, "minor": true },
+    { "name": "Faridabad", "state_code": "06", "x": 380, "y": 352, "minor": true },
+    { "name": "Gurugram", "state_code": "06", "x": 346, "y": 340, "minor": true }
+  ],
+  "plazas": [
+    { "id": "PZ-SHAMBHU", "name": "Shambhu", "state_code": "03" },
+    { "id": "PZ-BASTARA", "name": "Bastara", "state_code": "06" },
+    { "id": "PZ-PANIPAT", "name": "Panipat", "state_code": "06" },
+    { "id": "TP-UP-118", "name": "TP-UP-118", "state_code": "09" },
+    { "id": "TP-UP-121", "name": "TP-UP-121", "state_code": "09" },
+    { "id": "TP-UP-231", "name": "TP-UP-231", "state_code": "09" },
+    { "id": "TP-UP-204", "name": "TP-UP-204", "state_code": "09" },
+    { "id": "TP-UP-188", "name": "TP-UP-188", "state_code": "09" },
+    { "id": "TP-UP-160", "name": "TP-UP-160", "state_code": "09" },
+    { "id": "PZ-SHAHJAHANPUR", "name": "Shahjahanpur", "state_code": "08" },
+    { "id": "PZ-KHERKI-DAULA", "name": "Kherki Daula", "state_code": "06" }
+  ],
+  "routes": [
+    {
+      "id": "r1",
+      "name": "Ludhiana → Delhi",
+      "highway": "NH-44",
+      "from": "Ludhiana",
+      "to": "Delhi",
+      "distance_km": 310,
+      "svg_path": "M180 95 C228 118 255 140 275 160 S310 205 318 222 S330 245 338 258 S362 302 370 320",
+      "stops": [
+        { "city": "Ludhiana", "km": 0 },
+        { "city": "Ambala", "km": 114.7 },
+        { "city": "Karnal", "km": 204.6 },
+        { "city": "Delhi", "km": 310 }
+      ],
+      "plazas": [
+        { "id": "PZ-SHAMBHU", "frac": 0.32, "km": 99.2 },
+        { "id": "PZ-BASTARA", "frac": 0.62, "km": 192.2 },
+        { "id": "PZ-PANIPAT", "frac": 0.84, "km": 260.4 }
+      ]
+    },
+    {
+      "id": "r2",
+      "name": "Moradabad → Delhi",
+      "highway": "NH-9",
+      "from": "Moradabad",
+      "to": "Delhi",
+      "distance_km": 170,
+      "svg_path": "M540 250 C480 262 430 298 370 320",
+      "stops": [
+        { "city": "Moradabad", "km": 0 },
+        { "city": "Delhi", "km": 170 }
+      ],
+      "plazas": [
+        { "id": "TP-UP-118", "frac": 0.35, "km": 59.5 },
+        { "id": "TP-UP-121", "frac": 0.72, "km": 122.4 }
+      ]
+    },
+    {
+      "id": "r3",
+      "name": "Kanpur → Delhi",
+      "highway": "NH-19",
+      "from": "Kanpur",
+      "to": "Delhi",
+      "distance_km": 480,
+      "svg_path": "M720 510 C630 505 545 478 470 450 S398 362 370 320",
+      "stops": [
+        { "city": "Kanpur", "km": 0 },
+        { "city": "Agra", "km": 249.6 },
+        { "city": "Delhi", "km": 480 }
+      ],
+      "plazas": [
+        { "id": "TP-UP-204", "frac": 0.28, "km": 134.4 },
+        { "id": "TP-UP-188", "frac": 0.55, "km": 264 },
+        { "id": "TP-UP-160", "frac": 0.82, "km": 393.6 }
+      ]
+    },
+    {
+      "id": "r4",
+      "name": "Jaipur → Delhi",
+      "highway": "NH-48",
+      "from": "Jaipur",
+      "to": "Delhi",
+      "distance_km": 280,
+      "svg_path": "M215 470 C255 420 295 385 320 362 S352 333 370 320",
+      "stops": [
+        { "city": "Jaipur", "km": 0 },
+        { "city": "Delhi", "km": 280 }
+      ],
+      "plazas": [
+        { "id": "PZ-SHAHJAHANPUR", "frac": 0.35, "km": 98 },
+        { "id": "PZ-KHERKI-DAULA", "frac": 0.68, "km": 190.4 }
+      ]
+    },
+    {
+      "id": "r5",
+      "name": "Lucknow → Delhi",
+      "highway": "NH-27 / NH-19",
+      "from": "Lucknow",
+      "to": "Delhi",
+      "distance_km": 560,
+      "svg_path": "M770 420 C752 452 738 485 720 510 C630 505 545 478 470 450 S398 362 370 320",
+      "stops": [
+        { "city": "Lucknow", "km": 0 },
+        { "city": "Kanpur", "km": 80 },
+        { "city": "Agra", "km": 329.6 },
+        { "city": "Delhi", "km": 560 }
+      ],
+      "plazas": [
+        { "id": "TP-UP-231", "frac": 0.097, "km": 40 },
+        { "id": "TP-UP-204", "frac": 0.42, "km": 214.4 },
+        { "id": "TP-UP-188", "frac": 0.637, "km": 344 },
+        { "id": "TP-UP-160", "frac": 0.855, "km": 473.6 }
+      ]
+    }
+  ]
+}

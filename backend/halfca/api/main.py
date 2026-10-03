@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from halfca import __version__, config
+from halfca.api.routers import dataset
 
 app = FastAPI(
     title="Half CA", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json"
@@ -19,3 +20,6 @@ def health() -> dict[str, object]:
         "data_ready": config.DB_PATH.is_file(),
         "llm": config.LLM_PROVIDER or None,
     }
+
+
+app.include_router(dataset.router, prefix="/api")

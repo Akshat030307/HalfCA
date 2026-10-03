@@ -128,6 +128,18 @@ The generator also has a **random mode** (`--scenario random --seed N`) that inj
 
 **Clean records** use realistic distributions: log-normal amounts, a weekday bias, and payment lags of 0–45 days. Every injected record carries a `truth_label`.
 
+**Data contract (settled in M1; the engines must follow it):**
+- **Snapshot:** data is as of **10 Oct 2026, 18:00 IST**. Payments after that date are not in the bank file, so roughly 380 of the month's invoices are paid and ~1,000 vouchers are in the day book. The demo has ~60 e-way bills; the ₹18.6 L ITC total caps how many inward invoices cross ₹50,000.
+- **Layout:** `data/sources/` holds the five uploads in their native formats (invoice register CSV, HDFC statement CSV, Tally day book XML, IMS feed JSON, e-way bills + toll crossings JSON). `data/reference/` holds aggregator/officer-side data (counterparties, upstream invoices, HSN rates, routes). `data/truth/` holds truth labels and a manifest; **engines never read `truth/`** and it is not loaded into DuckDB. Raw tables are `raw_*` in DuckDB.
+- **Funnel:** each invoice pairs with its books entry (a Purchase/Sales voucher). Payments and IMS records link to the pair afterwards.
+- **ITC claimed (as filed)** = ITC on every IMS record, because unactioned records are deemed accepted.
+- **Duplicates** are inward double-bookings, not on IMS. They are excluded from the physical-trail checks (the original is checked once).
+- **Physical trail** applies to **inter-state** inward goods at or above ₹50,000. Crossings count from `generated_at` to `valid_until` + 48 h (MB/0877's window is 24 h validity + 48 h = 72 h). With a single crossing, speed is a lower bound measured from `generated_at`. Only crossings that move forward along the route count (return trips are ignored).
+- **Recycled e-way bill:** invoices that quote the same `ewb_no` (or the same vehicle in overlapping windows) are all flagged.
+- **Outward tax errors are over-charges or wrong heads**, so under-reported output tax is ₹0 in the demo and exposure = rejected + at risk.
+- **Benford:** Kaveri Metals' 64 invoices (60 to other buyers + 4 to Arora) have MAD 0.0514. Sharma Steel (72) conforms. Nobody else reaches 50 invoices.
+- **Name similarity** for stage 3 is `ingest.normalise.name_similarity` (RapidFuzz `token_sort_ratio` after lowercasing and stripping punctuation). The generator uses the same function.
+
 **Discrepancy catalogue** (random-mode injection rates):
 
 | Code | Discrepancy | Rate |
@@ -156,7 +168,7 @@ The generator also has a **random mode** (`--scenario random --seed N`) that inj
 | Layer | Choice |
 |---|---|
 | Backend | Python 3.12, FastAPI, Pydantic v2, managed with **uv** |
-| Storage | **DuckDB** file at `data/halfca.duckdb`, plus Parquet for generated sources. No Postgres needed for the demo |
+| Storage | **DuckDB** file at `data/halfca.duckdb`, written atomically (temp file + rename). Generated sources stay in their native formats under `data/sources/`. No Postgres needed |
 | Data / ML | pandas, RapidFuzz, NetworkX, scikit-learn (Isolation Forest), SciPy |
 | LLM | Provider-agnostic adapter in `ai/llm.py` (Anthropic SDK or OpenAI-compatible). Provider/model from env `HALFCA_LLM_PROVIDER` / `HALFCA_LLM_MODEL`. Provider not chosen yet |
 | MCP | Official MCP Python SDK (`FastMCP`), stdio transport |
@@ -267,7 +279,7 @@ Output: match groups with `stage` and `confidence`. Unmatched records go to the 
 - **Arithmetic:** recompute the tax and compare, with ±₹1 tolerance.
 - Flag invoices within 30 days of 22 Sep 2025 as `transition_review`. Flag them for review; never auto-decide.
 
-### Physical trail (inward goods invoices ≥ ₹50,000)
+### Physical trail (inter-state inward goods invoices ≥ ₹50,000; see the data contract)
 1. E-way bill exists? If not → `missing_ewb`.
 2. Vehicle has toll crossings on the declared route within the e-way bill validity? If none → `paper_only`.
 3. Average speed (route km ÷ elapsed time between first and last crossing, extrapolated to origin/destination) ≤ 80 km/h? If not → `impossible_journey`.
@@ -410,6 +422,7 @@ Every tool returns JSON with an `evidence` array. The copilot is a tool-use loop
   | `ims_feed_2026-09.json` | 212 supplier records | IMS |
   | `eway_bills_sep26.json` | 181 e-way bills + toll crossings | Road (orange) |
 
+- Record counts in the file rows come from `GET /api/dataset`; the numbers in the table above are illustrative.
 - **Right column:** a step list. Each step shows a spinner while running, then a green tick:
   1. Extracting 552 invoices with vision AI
   2. Validating 120 GSTINs (state · PAN · check digit)
@@ -440,7 +453,7 @@ Every tool returns JSON with an `evidence` array. The copilot is a tool-use loop
 - **Three hero flip-cards** (they start on a striped back with the logo and flip to the front in sequence):
   1. **Tax rate**, "Abolished slab still charged": `DF/0450`, Doaba Fittings, 12 Sep 2026, HSN 7307. Diff box: Recorded "12% · ₹7,020" (red row) vs Expected "18% · ₹10,530" (green row). Note: "The 12% slab was abolished by GST 2.0 on 22 Sep 2025. Rate checked against the date of supply."
   2. **Tax head**, "IGST on an intra-state sale": `AR/S/2219`, sale to Capital Hardware, Delhi → Delhi. Recorded "IGST 18% · ₹21,600" vs Expected "CGST + SGST 9% + 9%".
-  3. **Duplicate**, "Same invoice, renumbered": Patel Pipes, `INV-0418` (04 Sep) and `INV/418` (06 Sep), both ₹1,12,000. Note: "Same supplier, same amount, invoice number edit distance 1, two days apart."
+  3. **Duplicate**, "Same invoice, renumbered": Patel Pipes, `INV-0418` (04 Sep) and `INV/418` (06 Sep), both ₹1,12,000. Note: "Same supplier, same amount, invoice number edit distance 2 (identical once normalised), two days apart."
 - **Below:** an "All flags" table (Record · Counterparty · Type chip · Recorded (red mono) · Expected (green mono) · ₹ impact) with a type filter. Rows animate in.
 
 **E · Follow the Goods ★** (the money shot)

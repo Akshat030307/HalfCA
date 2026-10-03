@@ -28,6 +28,8 @@ Why this shape:
 
 Each milestone ends green (`make test`), running locally, committed, and deployed.
 
+**Status (2026-10-03):** M0 ✅ live at https://halfca.akshatchowdhary.online · M1 ✅ demo + random generators, 38 tests.
+
 | # | Milestone | Delivers | Done when |
 |---|---|---|---|
 | **M0** | Foundations + deploy pipeline | Repo skeleton, FastAPI `/api/health`, Next.js shell with both themes and 9 placeholder screens, Dockerfile, compose, `make deploy` | Shell is live on the VPS and `/api/health` answers through the web container |
