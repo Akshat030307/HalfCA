@@ -410,7 +410,7 @@ export function RouteMap({
       {showBadge && (
         <div
           className={cn(
-            "absolute left-4 top-4 rounded-full border-2 px-4 py-1.5 font-heading text-[14px] font-bold shadow-[3px_3px_0_var(--ink)]",
+            "absolute left-2 top-2 rounded-full border-2 px-2.5 py-1 font-heading text-[11px] font-bold shadow-[3px_3px_0_var(--ink)] sm:left-4 sm:top-4 sm:px-4 sm:py-1.5 sm:text-[14px]",
             showBadge.bad ? "border-ink bg-bad text-white" : "border-ink bg-ok text-white",
           )}
         >
@@ -418,17 +418,17 @@ export function RouteMap({
         </div>
       )}
       {showClock && trip && (
-        <div className="absolute right-4 top-4 rounded-2xl border-2 border-ink bg-panel px-4 py-2.5 text-right shadow-[3px_3px_0_var(--ink)] dark:border-bad">
-          <div className="font-display text-[30px] leading-none text-bad">
+        <div className="absolute right-2 top-10 rounded-2xl border-2 border-ink bg-panel px-2.5 py-1.5 text-right shadow-[3px_3px_0_var(--ink)] sm:right-4 sm:top-4 sm:px-4 sm:py-2.5 dark:border-bad">
+          <div className="font-display text-[20px] leading-none text-bad sm:text-[30px]">
             {duration(showClock.minutes)}
           </div>
-          <div className="mt-1 font-mono text-[12px] text-ink">
+          <div className="mt-1 font-mono text-[10px] text-ink sm:text-[12px]">
             {trip.distance_km} km · {Math.round(trip.speed_kmh ?? 0)} km/h{" "}
             <span className="text-muted">(limit 80)</span>
           </div>
         </div>
       )}
-      <div className="absolute bottom-3 left-4 flex items-center gap-4 rounded-full bg-panel/85 px-3 py-1.5 text-[11.5px] text-muted backdrop-blur">
+      <div className="absolute bottom-2 left-2 flex items-center gap-2.5 rounded-full bg-panel/85 px-2.5 py-1 text-[10px] text-muted backdrop-blur sm:bottom-3 sm:left-4 sm:gap-4 sm:px-3 sm:py-1.5 sm:text-[11.5px]">
         <span className="flex items-center gap-1.5">
           <span className="h-1 w-5 rounded-full bg-orange" /> truck trail
         </span>

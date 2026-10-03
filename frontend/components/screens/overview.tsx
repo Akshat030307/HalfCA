@@ -137,7 +137,7 @@ export function OverviewScreen() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-3 gap-4 min-[1400px]:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 min-[1400px]:grid-cols-6">
         <KpiTile index={0} label="Reconciled" value={k.reconciled} caption="invoices this month" />
         <KpiTile index={1} label="Matched" value={k.matched} tone="ok" caption="clean on paper" />
         <KpiTile
@@ -165,7 +165,7 @@ export function OverviewScreen() {
         />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1fr_1fr_1.15fr]">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1fr_1fr_1.15fr]">
         <Card title="Where the month landed" subtitle="Every invoice, by outcome">
           <div className="flex flex-col items-center gap-5">
             <Donut

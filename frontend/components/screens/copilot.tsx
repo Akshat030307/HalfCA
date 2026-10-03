@@ -132,7 +132,7 @@ function Answer({ turn, streaming }: { turn: BotTurn; streaming: boolean }) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex max-w-[86%] flex-col gap-3"
+      className="flex max-w-full flex-col gap-3 sm:max-w-[86%]"
     >
       {turn.tools.length > 0 && <ToolTrace lines={turn.tools} />}
       {thinking && turn.tools.every((t) => t.done) && (
@@ -262,7 +262,7 @@ export function CopilotScreen() {
   const tools = info?.tools.map((t) => t.name) ?? TOOLS;
 
   return (
-    <div className="grid items-start gap-5 xl:grid-cols-[260px_1fr]">
+    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[260px_1fr]">
       <Card title="Try asking">
         <div className="flex flex-col gap-2">
           {suggestions.map((s) => (
@@ -307,7 +307,7 @@ export function CopilotScreen() {
       >
         <div
           ref={scroller}
-          className="flex h-[calc(100vh-372px)] min-h-[360px] flex-col gap-5 overflow-y-auto p-5"
+          className="flex h-[62vh] min-h-[360px] flex-col gap-5 overflow-y-auto p-4 sm:p-5 xl:h-[calc(100vh-372px)]"
         >
           {turns.length === 0 && (
             <div className="halftone m-auto flex flex-col items-center gap-3 rounded-3xl px-10 py-12 text-center">
@@ -328,7 +328,7 @@ export function CopilotScreen() {
                   key={t.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="ml-auto max-w-[70%] rounded-2xl rounded-br-md border-2 border-ink bg-orange px-4 py-2.5 text-[14px] font-medium text-on-orange dark:border-orange"
+                  className="ml-auto max-w-[85%] rounded-2xl sm:max-w-[70%] rounded-br-md border-2 border-ink bg-orange px-4 py-2.5 text-[14px] font-medium text-on-orange dark:border-orange"
                 >
                   {t.text}
                 </motion.div>
@@ -343,19 +343,19 @@ export function CopilotScreen() {
             e.preventDefault();
             void ask(draft);
           }}
-          className="flex items-center gap-3 border-t-[1.5px] border-line p-4"
+          className="flex items-center gap-2 border-t-[1.5px] border-line p-3 sm:gap-3 sm:p-4"
         >
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Why did my liability go up?"
             maxLength={2000}
-            className="flex-1 rounded-full border-2 border-line bg-panel px-4 py-2.5 text-[14px] text-ink outline-none placeholder:text-muted focus:border-orange"
+            className="min-w-0 flex-1 rounded-full border-2 border-line bg-panel px-4 py-2.5 text-[14px] text-ink outline-none placeholder:text-muted focus:border-orange"
           />
           <button
             type="submit"
             disabled={busy !== null || !draft.trim()}
-            className="btn-press inline-flex items-center gap-2 rounded-full bg-orange px-5 py-2.5 font-heading text-[14px] font-bold text-on-orange disabled:opacity-50"
+            className="btn-press inline-flex shrink-0 items-center gap-2 rounded-full bg-orange px-4 py-2.5 sm:px-5 font-heading text-[14px] font-bold text-on-orange disabled:opacity-50"
           >
             {busy !== null ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}{" "}
             Send

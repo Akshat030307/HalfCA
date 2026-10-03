@@ -139,7 +139,7 @@ export function CreditScreen() {
   if (!graph) return <Skeleton className="h-[640px]" />;
 
   return (
-    <div className="grid items-start gap-5 xl:grid-cols-[1fr_340px]">
+    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[1fr_340px]">
       <Card
         title="Whose credit is your credit built on?"
         subtitle={

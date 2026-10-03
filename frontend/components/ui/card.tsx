@@ -18,10 +18,10 @@ export function Card({
   children: ReactNode;
 }) {
   return (
-    <section className={cn("card flex flex-col", className)}>
+    <section className={cn("card flex min-w-0 flex-col", className)}>
       {(title || right) && (
-        <header className="flex items-start justify-between gap-3 px-5 pt-4">
-          <div>
+        <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2 px-4 pt-4 sm:px-5">
+          <div className="min-w-0">
             {title && (
               <h2 className="font-heading text-[15px] font-bold leading-tight text-ink">{title}</h2>
             )}

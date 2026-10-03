@@ -110,7 +110,7 @@ export function LiabilityScreen() {
   );
 
   return (
-    <div className="grid gap-5 xl:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
       <Card
         title="Input tax credit · ₹ lakh"
         subtitle="What you'd claim as filed, and what survives the checks"
@@ -189,32 +189,34 @@ export function LiabilityScreen() {
         </Card>
 
         <Card title="By tax head" subtitle="Reconciled figures">
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-[0.12em] text-muted">
-                <th className="pb-2 font-bold">Head</th>
-                <th className="pb-2 text-right font-bold">Output</th>
-                <th className="pb-2 text-right font-bold">ITC</th>
-                <th className="pb-2 text-right font-bold">Net</th>
-              </tr>
-            </thead>
-            <tbody className="font-mono">
-              {data.heads.map((h) => (
-                <tr key={h.head} className="border-t border-line">
-                  <td className="py-2 font-sans font-semibold text-ink">{h.head}</td>
-                  <td className="py-2 text-right text-ink">{inr(h.output_reconciled)}</td>
-                  <td className="py-2 text-right text-ink">{inr(h.itc_eligible)}</td>
-                  <td className="py-2 text-right text-ink">{inr(h.net_reconciled)}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[420px] text-[13px]">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-[0.12em] text-muted">
+                  <th className="pb-2 font-bold">Head</th>
+                  <th className="pb-2 text-right font-bold">Output</th>
+                  <th className="pb-2 text-right font-bold">ITC</th>
+                  <th className="pb-2 text-right font-bold">Net</th>
                 </tr>
-              ))}
-              <tr className="border-t-2 border-ink font-bold">
-                <td className="py-2 font-sans text-ink">Total</td>
-                <td className="py-2 text-right text-ink">{inr(total.out)}</td>
-                <td className="py-2 text-right text-ink">{inr(total.itc)}</td>
-                <td className="py-2 text-right text-ink">{inr(total.net)}</td>
-              </tr>
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="font-mono">
+                {data.heads.map((h) => (
+                  <tr key={h.head} className="border-t border-line">
+                    <td className="py-2 font-sans font-semibold text-ink">{h.head}</td>
+                    <td className="py-2 text-right text-ink">{inr(h.output_reconciled)}</td>
+                    <td className="py-2 text-right text-ink">{inr(h.itc_eligible)}</td>
+                    <td className="py-2 text-right text-ink">{inr(h.net_reconciled)}</td>
+                  </tr>
+                ))}
+                <tr className="border-t-2 border-ink font-bold">
+                  <td className="py-2 font-sans text-ink">Total</td>
+                  <td className="py-2 text-right text-ink">{inr(total.out)}</td>
+                  <td className="py-2 text-right text-ink">{inr(total.itc)}</td>
+                  <td className="py-2 text-right text-ink">{inr(total.net)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <p className="mt-2 text-[12px] text-muted">
             IGST credit left over after IGST is set off against CGST and SGST, so a negative head is
             normal; the total is what you pay.

@@ -484,7 +484,7 @@ export function RingGraph({
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="absolute bottom-4 left-4 w-[260px] rotate-[-1deg] rounded-2xl border-2 border-ink bg-panel px-4 py-3 shadow-[4px_4px_0_var(--ink)] dark:border-bad"
+            className="relative mx-1 mb-2 mt-3 rotate-[-1deg] rounded-2xl sm:absolute sm:bottom-4 sm:left-4 sm:m-0 sm:w-[260px] border-2 border-ink bg-panel px-4 py-3 shadow-[4px_4px_0_var(--ink)] dark:border-bad"
           >
             <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-bad">
               Your ITC at risk

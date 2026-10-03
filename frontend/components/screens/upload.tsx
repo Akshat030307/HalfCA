@@ -229,13 +229,13 @@ export function UploadScreen() {
       }}
       onDrop={onDrop}
       className={cn(
-        "relative rounded-[24px] border-[2.5px] border-dashed p-6 transition-colors",
+        "relative rounded-[24px] border-[2.5px] border-dashed p-3 transition-colors sm:p-6",
         dragging ? "border-orange bg-orange-pale/40" : "border-ink/30 bg-panel/40 dark:border-line",
       )}
     >
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
         {/* Left: the files */}
-        <section className="card halftone p-5">
+        <section className="card halftone min-w-0 p-4 sm:p-5">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-heading text-[15px] font-bold text-ink">The month&apos;s files</h2>
             <span className="text-[12px] text-muted">
@@ -289,7 +289,7 @@ export function UploadScreen() {
         </section>
 
         {/* Right: what happens */}
-        <section className="card flex flex-col p-5">
+        <section className="card flex min-w-0 flex-col p-4 sm:p-5">
           <h2 className="mb-4 font-heading text-[15px] font-bold text-ink">What Half CA does</h2>
           <ol className="space-y-2.5">
             {steps.map((s, i) => (

@@ -155,7 +155,7 @@ export function DiscrepanciesScreen() {
         ))}
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {heroes.map((h, i) => (
           <FlipCard key={h.flag.flag_id} label={h.label} flag={h.flag} index={i} />
         ))}
@@ -165,41 +165,43 @@ export function DiscrepanciesScreen() {
         {rows.length === 0 ? (
           <EmptyState title="Nothing of this kind.">Try another filter.</EmptyState>
         ) : (
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-[0.12em] text-muted">
-                <th className="pb-2 font-bold">Record</th>
-                <th className="pb-2 font-bold">Counterparty</th>
-                <th className="pb-2 font-bold">Type</th>
-                <th className="pb-2 font-bold">Recorded</th>
-                <th className="pb-2 font-bold">Expected</th>
-                <th className="pb-2 text-right font-bold">₹ impact</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((f, i) => (
-                <motion.tr
-                  key={f.flag_id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + Math.min(i, 25) * 0.025 }}
-                  onClick={() => show(f)}
-                  className="cursor-pointer border-t border-line align-top hover:bg-peach/50"
-                >
-                  <td className="py-2 pr-3 font-mono font-semibold text-ink">{f.ref}</td>
-                  <td className="max-w-[220px] truncate py-2 pr-3 text-ink">{f.counterparty}</td>
-                  <td className="py-2 pr-3">
-                    <Chip tone={KIND_TONE[f.kind] ?? "neutral"}>{f.label}</Chip>
-                  </td>
-                  <td className={cn("py-2 pr-3 font-mono text-bad")}>{f.recorded}</td>
-                  <td className="py-2 pr-3 font-mono text-ok">{f.expected}</td>
-                  <td className="py-2 text-right font-mono font-semibold text-ink">
-                    {f.impact > 0 ? inr(f.impact) : "—"}
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[680px] text-[13px]">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-[0.12em] text-muted">
+                  <th className="pb-2 font-bold">Record</th>
+                  <th className="pb-2 font-bold">Counterparty</th>
+                  <th className="pb-2 font-bold">Type</th>
+                  <th className="pb-2 font-bold">Recorded</th>
+                  <th className="pb-2 font-bold">Expected</th>
+                  <th className="pb-2 text-right font-bold">₹ impact</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((f, i) => (
+                  <motion.tr
+                    key={f.flag_id}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 + Math.min(i, 25) * 0.025 }}
+                    onClick={() => show(f)}
+                    className="cursor-pointer border-t border-line align-top hover:bg-peach/50"
+                  >
+                    <td className="py-2 pr-3 font-mono font-semibold text-ink">{f.ref}</td>
+                    <td className="max-w-[220px] truncate py-2 pr-3 text-ink">{f.counterparty}</td>
+                    <td className="py-2 pr-3">
+                      <Chip tone={KIND_TONE[f.kind] ?? "neutral"}>{f.label}</Chip>
+                    </td>
+                    <td className={cn("py-2 pr-3 font-mono text-bad")}>{f.recorded}</td>
+                    <td className="py-2 pr-3 font-mono text-ok">{f.expected}</td>
+                    <td className="py-2 text-right font-mono font-semibold text-ink">
+                      {f.impact > 0 ? inr(f.impact) : "—"}
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
     </div>

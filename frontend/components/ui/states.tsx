@@ -11,7 +11,7 @@ export function Skeleton({ className }: { className?: string }) {
 export function LoadingBlocks({ rows = 3 }: { rows?: number }) {
   return (
     <div className="grid gap-5">
-      <div className="grid grid-cols-3 gap-4 2xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 2xl:grid-cols-6">
         {Array.from({ length: 6 }, (_, i) => (
           <Skeleton key={i} className="h-28" />
         ))}

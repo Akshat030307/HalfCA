@@ -65,7 +65,7 @@ export function GoodsScreen() {
   const failedOnRoad = summary?.physical.failed_inside_matched ?? 0;
 
   return (
-    <div className="grid items-start gap-5 xl:grid-cols-[1fr_360px]">
+    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[1fr_360px]">
       <Card
         title="Where the goods actually went"
         subtitle={`${count(data.invoices.length)} inter-state consignments of ₹50,000+ checked against FASTag toll crossings`}

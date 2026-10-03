@@ -177,6 +177,14 @@ code fingerprint changes and re-reconciles an uploaded dataset instead of replac
 - The Upload screen has only "Choose a folder", "Choose files", drag-and-drop and "Download
   sample folder". To restore the demo data on the server: `make deploy-reset`.
 
+## 9b3. Mobile
+
+- Below `lg` (1024 px) the sidebar is replaced by a ☰ menu in the top bar (`MobileNav` in
+  `components/shell/sidebar.tsx`), portalled to `<body>` because the top bar's backdrop blur
+  traps `position: fixed` children. Grids that only set columns at `xl`/`lg` need an explicit
+  `grid-cols-1` (an implicit grid column grows with its content); cards have `min-w-0`; wide
+  tables sit in `overflow-x-auto` with a `min-w-[…]`. Checked at 390, 768, 1280 and 1440 px.
+
 ## 9c. Report and evaluation (built in M6)
 
 - **Audit report** (`halfca/report/pdf.py`, `templates/audit.html.j2` + `audit.css`):
