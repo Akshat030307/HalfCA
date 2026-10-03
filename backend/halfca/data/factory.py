@@ -281,6 +281,7 @@ class Factory:
         self._pans: set[str] = set()
         self._ewbs: set[str] = set()
         self._vehicles: set[str] = set()
+        self._addresses: set[str] = set()
 
     # ── names ──
     def reserve(self, *names: str) -> None:
@@ -342,9 +343,15 @@ class Factory:
         raise RuntimeError("ran out of PANs")
 
     def address(self, city: str) -> str:
-        area = self.rng.choice(AREAS.get(city, ("Main Road",)))
-        kind = self.rng.choice(["Plot", "Shop", "Unit", "Khasra"])
-        return f"{kind} {self.rng.randint(2, 480)}, {area}, {city}"
+        """Unique per firm: a shared address is a taint signal, so it only happens on purpose."""
+        for _ in range(500):
+            area = self.rng.choice(AREAS.get(city, ("Main Road",)))
+            kind = self.rng.choice(["Plot", "Shop", "Unit", "Khasra"])
+            addr = f"{kind} {self.rng.randint(2, 480)}, {area}, {city}"
+            if addr not in self._addresses:
+                self._addresses.add(addr)
+                return addr
+        raise RuntimeError("ran out of addresses")
 
     def phone(self) -> str:
         return f"+91 55{self.rng.randint(100, 999)} {self.rng.randint(10000, 99999)}"

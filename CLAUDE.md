@@ -18,7 +18,7 @@ This file is the **complete spec**. The build order and deploy flow live in `doc
 - **Recycled e-way bill:** flag **every** invoice that shares the trip (all 3 JP invoices), not only the ones after the first.
 - **Ring detection:** a cycle (length ≤ 6) counts when at least one of its nodes is within 3 hops upstream of the user. The cycle itself may extend further.
 - **Stage 4 without an LLM:** skipped, so a no-LLM run shows 20 unmatched instead of 18. `test_demo_numbers` runs with a deterministic stub adjudicator.
-- **LLM provider:** not chosen yet. The LLM layer sits behind a small interface (`ai/llm.py`) so Anthropic or an OpenAI-compatible provider can be plugged in. Until then everything uses the templated fallbacks.
+- **LLM provider: Groq** (OpenAI-compatible), model `openai/gpt-oss-120b`, set via `HALFCA_LLM_PROVIDER=groq` and `HALFCA_LLM_API_KEY` in `backend/.env` (local) and `/root/halfca/.env` (VPS). Calls run at temperature 0 and are cached on disk (`data/llm_cache.json`) by request hash, so re-runs are stable and free. Tests never call a model: `tests/conftest.py` blanks the provider and uses a deterministic stub adjudicator. Other providers (`openai`, `openrouter`, `ollama`) are one env change away.
 - **Deploy:** Docker Compose on the VPS, behind the VPS's shared Caddy. Docker is a deploy tool only; local dev never needs it.
 
 ---
@@ -196,8 +196,10 @@ HalfCA/
 │   │   ├── models.py            Pydantic domain models + Evidence
 │   │   ├── data/                generator: entities, routes, scenario_demo, scenario_random, inject
 │   │   ├── ingest/              csv_loader, llm_extract, normalise, gstin
-│   │   ├── engines/             matching, tax, dupes_gaps, physical, taint, anomaly, liability
-│   │   ├── ai/                  llm (client + fallbacks), ims_autopilot, copilot, prompts/
+│   │   ├── engines/             common (Flag + evidence), matching, tax, dupes_gaps, physical, taint, anomaly, liability
+│   │   ├── ai/                  llm (client + cache), adjudicate (stage 4), ims_autopilot, copilot, prompts/
+│   │   ├── pipeline.py          runs every engine over raw_* tables → res_* tables + summary
+│   │   ├── fmt.py               ₹ / lakh / duration text for evidence and reasons
 │   │   ├── tools.py             the 7 tool functions (shared by copilot + MCP)
 │   │   ├── mcp_server.py
 │   │   ├── report/              pdf.py + templates/
@@ -244,6 +246,8 @@ Env (`backend/.env`, never committed): `HALFCA_LLM_PROVIDER`, `HALFCA_LLM_MODEL`
 
 All thresholds live in `config.py`.
 
+**Shared output (built in M2):** every engine emits `Flag`s (`engines/common.py`): `kind`, `category` (discrepancy · duplicate · unmatched · gap · physical · credit · anomaly · review), the record, counterparty, `recorded`, `expected`, ₹ `impact` and an `evidence` object `{summary, recorded, expected, chain: [{source, id, label, fields}], notes}`. `pipeline.reconcile()` runs the engines in order (duplicates → matching → payment/IMS links → diffs → tax → gaps → physical → taint → anomalies → IMS → liability) and returns the `res_*` tables. Invoice status precedence: unmatched → duplicate → discrepant → matched (physical failures stay inside matched). `make data` stores raw + results atomically; the container rebuilds the demo when the code fingerprint in `meta.code` changes.
+
 ### Ingestion
 - **CSV/JSON loader:** the primary path, and what the demo uses.
 - **LLM extraction:** for PDFs/images. Send the file as a document/image content block and ask for a JSON schema of invoice fields. Validate with Pydantic. Retry once on schema failure. On failure, mark the record `needs_review`. Never invent values.
@@ -265,7 +269,7 @@ Output: match groups with `stage` and `confidence`. Unmatched records go to the 
   - invoice ID (normalised equal but raw string differs)
   - tax rate
   - tax head
-- **Exact duplicate:** same GSTIN + invoice_no + amount.
+- **Exact duplicate:** same GSTIN + invoice_no + amount (no date window: the same bill keyed twice).
 - **Near-duplicate:** same supplier, same amount, invoice_no edit distance ≤ 2, dates ≤ 5 days apart.
 - **Gaps:**
   - invoice without payment (aged)
@@ -534,7 +538,7 @@ Every tool returns JSON with an `evidence` array. The copilot is a tool-use loop
 - Table columns: Supplier · Invoice · Date · Taxable · ITC · Autopilot (pill: Accept green / Reject red / Pending amber) · Reason (muted, one line).
 - Show the hero rows first, e.g.:
   - Rohilkhand Alloys `MB/0877`: Reject, "Goods not evidenced: 0 toll crossings"
-  - Kaveri Metals `KM/26/3341`: Pending, "Supplier 2 hops from a circular-trading ring"
+  - Kaveri Metals `KM/26/3341`: Pending, "Supplier fed by a circular-trading ring (taint 0.82)"
   - Ganga Wires `KN/1502`: Reject, "Impossible journey: 480 km in 3h 02m"
   - Doaba Fittings `DF/0450`: Reject, "Charged abolished 12% slab · expected 18%"
   - Pink City Fasteners `JP/1188`: Reject, "Recycled e-way bill (trip used by JP/1187)"

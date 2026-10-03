@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from halfca import __version__, config
+from halfca.ai import llm
 from halfca.api.routers import dataset
 
 app = FastAPI(
@@ -19,6 +20,7 @@ def health() -> dict[str, object]:
         "version": __version__,
         "data_ready": config.DB_PATH.is_file(),
         "llm": config.LLM_PROVIDER or None,
+        "llm_model": llm.model_name(),
     }
 
 
