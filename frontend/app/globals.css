@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* next-themes puts .dark on <html>; Tailwind's dark: variant follows it. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Theme tokens (mirrored in lib/tokens.ts) ───────────────────────────────
+   Light = pale orange + peach. Dark = pure black. Orange is the one brand accent;
+   amber is golden so a "pending" chip never reads as brand. */
+:root {
+  --bg: #fff0e1;
+  --panel: #fff8f0;
+  --peach: #ffdcc2;
+  --line: #ebcfb8;
+  --ink: #1c130c;
+  --muted: #7b6352;
+  --orange: #f26b1d;
+  --orange-pale: #ffc59a;
+  --ok: #16a34a;
+  --warn: #c98a00;
+  --dup: #7c3aed;
+  --idle: #64748b;
+  --bad: #dc2626;
+
+  --on-orange: #1c130c;
+  --card-border: 2px solid var(--ink);
+  --card-shadow: 4px 4px 0 var(--ink);
+  --card-shadow-press: 1px 1px 0 var(--ink);
+  --dots: rgba(28, 19, 12, 0.09);
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #000000;
+  --panel: #0d0d0d;
+  --peach: #1a1411;
+  --line: #2a2420;
+  --ink: #fff4ea;
+  --muted: #a8978a;
+  --orange: #ff8a3d;
+  --orange-pale: #3a2212;
+  --ok: #22c55e;
+  --warn: #fbbf24;
+  --dup: #a78bfa;
+  --idle: #94a3b8;
+  --bad: #f87171;
+
+  --on-orange: #000000;
+  --card-border: 1.5px solid var(--line);
+  --card-shadow: 4px 4px 0 #24160d;
+  --card-shadow-press: 1px 1px 0 #24160d;
+  --dots: rgba(255, 244, 234, 0.07);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-peach: var(--peach);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-orange: var(--orange);
+  --color-orange-pale: var(--orange-pale);
+  --color-on-orange: var(--on-orange);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-dup: var(--dup);
+  --color-idle: var(--idle);
+  --color-bad: var(--bad);
+
+  --font-display: var(--font-anton);
+  --font-heading: var(--font-space-grotesk);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+
+  --radius-card: 18px;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+}
+
+/* ── Building blocks ───────────────────────────────────────────────────────── */
+@utility card {
+  background: var(--panel);
+  border: var(--card-border);
+  border-radius: 18px;
+  box-shadow: var(--card-shadow);
+}
+
+/* Comic halftone texture for hero tiles and empty states. */
+@utility halftone {
+  background-image: radial-gradient(var(--dots) 1.2px, transparent 1.3px);
+  background-size: 10px 10px;
+}
+
+@utility btn-press {
+  border: var(--card-border);
+  box-shadow: var(--card-shadow);
+  transition:
+    transform 90ms ease,
+    box-shadow 90ms ease;
+  &:active {
+    transform: translate(3px, 3px);
+    box-shadow: var(--card-shadow-press);
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}

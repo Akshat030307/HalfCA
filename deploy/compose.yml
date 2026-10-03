@@ -1,0 +1,41 @@
+# Half CA on the VPS. Run from /root/halfca/deploy (make deploy does it for you).
+#
+# web is bound to the docker bridge gateway only (172.18.0.1:8040). The VPS's shared
+# Caddy (/root/mesh) terminates HTTPS for halfca.akshatchowdhary.online and proxies here.
+name: halfca
+
+services:
+  api:
+    build: ../backend
+    restart: unless-stopped
+    env_file:
+      - path: ../.env
+        required: false
+    volumes:
+      - halfca_data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      start_period: 120s
+      retries: 3
+    mem_limit: 900m
+
+  web:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${HALFCA_BIND:-172.18.0.1}:${HALFCA_PORT:-8040}:80"
+    volumes:
+      # Directories, not single files: rsync replaces files by rename, which would
+      # leave a single-file bind mount pointing at the old inode.
+      - ./caddy:/etc/caddy:ro
+      - ../frontend/out:/srv:ro
+      - caddy_data:/data
+    mem_limit: 128m
+
+volumes:
+  halfca_data:
+  caddy_data:

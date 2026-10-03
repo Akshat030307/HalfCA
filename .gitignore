@@ -1,0 +1,23 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Node / Next
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/next-env.d.ts
+*.tsbuildinfo
+
+# Data and secrets
+/data/*
+!/data/.gitkeep
+.env
+*.env.local
+
+# OS / editors
+.DS_Store
+.vscode/

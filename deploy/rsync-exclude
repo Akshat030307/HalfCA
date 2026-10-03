@@ -1,0 +1,13 @@
+# What make deploy does NOT copy to the VPS. Excluded paths are also protected from
+# --delete, so the server-side .env survives every deploy.
+.git/
+node_modules/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+/data/
+/.env
+/backend/.env
+/frontend/.next/
