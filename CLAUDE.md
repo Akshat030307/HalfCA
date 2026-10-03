@@ -32,6 +32,9 @@ Server access and the VPS layout are kept out of git, in `docs/CONTEXT.local.md`
 - **IMS reasons stay templated** even with a key: they are the spec's exact one-liners and can never drift. The model explains them in the copilot instead.
 - **Copilot number guard (M5):** every number in a model-written answer must appear in a tool result, the question or the prompt's background facts. One rewrite is allowed, then the templated answer is used. The UI shows "✓ N numbers traced to tool output".
 - **MCP SDK v2:** `FastMCP` is now `mcp.server.mcpserver.MCPServer`; `halfca/mcp_server.py` uses it.
+- **M6 scope (user, 2026-10-03):** the audit report and the accuracy scores only; no demo-day RUNBOOK.
+- **Audit report:** WeasyPrint with the brand fonts bundled in `backend/halfca/report/fonts/` (OFL; the server image only has DejaVu). Cached per dataset, IMS approval state and template version in `data/reports/`.
+- **Random mode road codes (M6 fix):** D11–D14 are drawn from the eligible pool (inter-state purchases ≥ ₹50,000) at the catalogue's share of *all* invoices. Drawing per invoice dropped ~85% of them (D13 appeared once in 40 months). The demo month is unaffected.
 
 ---
 
@@ -197,7 +200,7 @@ The generator also has a **random mode** (`--scenario random --seed N`) that inj
 HalfCA/
 ├── CLAUDE.md
 ├── Makefile
-├── docs/            PLAN.md (build order + deploy), RUNBOOK.md (you write it in M6)
+├── docs/            PLAN.md (build order + deploy), CONTEXT.md (handoff), EVAL.md (make eval)
 ├── deploy/          compose.yml, Caddyfile (web container), rsync excludes
 ├── data/            generated files + halfca.duckdb (gitignored)
 ├── backend/
@@ -633,4 +636,4 @@ Every tool returns JSON with an `evidence` array. The copilot is a tool-use loop
 - The copilot answers "Why did my liability go up?" with tool calls and evidence links, both with and without a key.
 - The MCP server lists 7 tools, and `supplier_risk` works from an MCP client.
 - `make report` produces the audit PDF.
-- `docs/RUNBOOK.md` has the demo-day checklist (offline run, reset data, which screens to show).
+- ~~`docs/RUNBOOK.md` demo-day checklist~~: dropped by the user (2026-10-03).

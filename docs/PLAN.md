@@ -28,7 +28,7 @@ Why this shape:
 
 Each milestone ends green (`make test`), running locally, committed, and deployed.
 
-**Status (2026-10-03):** M0 ✅ live at https://halfca.akshatchowdhary.online · M1 ✅ demo + random generators · M2 ✅ all engines; `test_demo_numbers` green with the stub and with Groq · M3 ✅ API, real folder upload with progress, demo pack · M4 ✅ all 9 screens, both themes · M5 ✅ copilot (Groq tool loop + number guard, templates without a key), MCP server, invoice PDFs read by AI; 134 tests.
+**Status (2026-10-03):** M0 ✅ live at https://halfca.akshatchowdhary.online · M1 ✅ demo + random generators · M2 ✅ all engines; `test_demo_numbers` green with the stub and with Groq · M3 ✅ API, real folder upload with progress, demo pack · M4 ✅ all 9 screens, both themes · M5 ✅ copilot (Groq tool loop + number guard, templates without a key), MCP server, invoice PDFs read by AI · M6 ✅ audit report PDF, `make eval` (docs/EVAL.md); 139 tests.
 
 | # | Milestone | Delivers | Done when |
 |---|---|---|---|
@@ -38,7 +38,7 @@ Each milestone ends green (`make test`), running locally, committed, and deploye
 | **M3** | API | `POST /reconcile` pipeline + every GET endpoint, Pydantic models mirrored in `lib/api.ts` | All endpoints return demo data with `evidence` |
 | **M4** | Screens | Upload, Matching, Overview, Discrepancies, **Goods ★**, **Credit ★**, IMS, Liability (Copilot UI shell) | All 9 screens render API data in both themes at 1280–1920 px |
 | **M5** | AI layer | `ai/llm.py` adapter (provider TBD) + template fallbacks, IMS reasons, copilot SSE tool loop, MCP server (7 tools), stage-4 adjudication, PDF extraction | Copilot answers "Why did my liability go up?" with tool trace and evidence, with and without an LLM |
-| **M6** | Ship it | WeasyPrint audit PDF, `make eval`, `docs/RUNBOOK.md`, final deploy | Definition of done in `CLAUDE.md` |
+| **M6** | Ship it | WeasyPrint audit PDF, `make eval` (RUNBOOK dropped by the user) | Definition of done in `CLAUDE.md` |
 
 Order inside M4: shell → Overview → **Goods** → **Credit** → the rest (the ★ screens get polish first).
 

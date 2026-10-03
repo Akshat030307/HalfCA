@@ -49,8 +49,8 @@ test: ## Backend tests + frontend typecheck and lint
 	$(BACKEND) uv run ruff check .
 	$(FRONTEND) pnpm typecheck && pnpm lint
 
-eval: ## Precision/recall per discrepancy type on random mode
-	$(BACKEND) uv run python -m halfca.eval --seed $(SEED)
+eval: ## Precision/recall per discrepancy type on 10 random months (SEEDS="1 2 3" to choose)
+	$(BACKEND) uv run python -m halfca.eval $(if $(SEEDS),--seeds $(SEEDS),)
 
 report: ## Write data/audit-report-2026-09.pdf
 	$(BACKEND) uv run python -m halfca.report.pdf

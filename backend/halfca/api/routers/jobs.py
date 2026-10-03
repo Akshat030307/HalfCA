@@ -1,4 +1,5 @@
-"""Upload, demo dataset, reset and reconcile: each starts a background job to poll."""
+"""Upload, demo dataset, reset and reconcile (background jobs to poll), and the files the
+app hands out: the demo pack and the audit report."""
 
 from __future__ import annotations
 
@@ -67,6 +68,17 @@ def reconcile(period: str | None = Query(None, pattern=r"^\d{4}-\d{2}$")) -> dic
 @router.get("/jobs/{job_id}", response_model=JobOut)
 def job(job_id: str) -> dict[str, Any]:
     return jobs.runner.get(job_id).as_dict()
+
+
+@router.get("/report.pdf")
+def report() -> FileResponse:
+    """The audit report for the current dataset (rendered once, then cached)."""
+    from halfca.report import pdf
+
+    ds = current()
+    return FileResponse(
+        pdf.report_path(ds), media_type="application/pdf", filename=pdf.download_name(ds)
+    )
 
 
 @router.get("/demo-pack.zip")

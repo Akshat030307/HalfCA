@@ -4,7 +4,7 @@ Read this before doing anything. It is the working memory of the project: where 
 how they run, what is decided, and what bites. `CLAUDE.md` is the product spec (what to
 build); `docs/PLAN.md` is the build order. This file is how to operate.
 
-Last updated: 2026-10-03, after M5.
+Last updated: 2026-10-03, after M6.
 
 ---
 
@@ -18,11 +18,11 @@ Last updated: 2026-10-03, after M5.
 | M3 API + upload | ✅ | All endpoints, real folder upload with progress jobs, reset, demo pack with invoice PDFs |
 | M4 screens | ✅ | All 9 screens on live API data, both themes, 1280–1920 px |
 | M5 AI layer | ✅ | 7 tools, copilot SSE (Groq tool loop + number guard, templates without a key), MCP server, invoice PDFs read by AI and checked against the register |
-| **M6 ship** | **next** | PDF audit report (`GET /api/report.pdf`, `make report`, enable the Liability button), `make eval`, RUNBOOK, final deploy |
+| M6 ship | ✅ | Audit report PDF (`GET /api/report.pdf`, `make report`, Liability button), `make eval` → `docs/EVAL.md`. RUNBOOK dropped by the user |
 
-Health right now: `make test` green (134 backend tests + frontend typecheck/lint).
-All 9 screens render real data; the copilot answers with and without a key. The audit-report
-button on Liability is disabled until M6.
+Health right now: `make test` green (139 backend tests + frontend typecheck/lint).
+All milestones are done: 9 screens on real data, the copilot with and without a key, the
+MCP server, invoice PDFs read by AI, the audit report and the accuracy scores.
 
 ## 2. Working with this user
 
@@ -168,6 +168,26 @@ code fingerprint changes and re-reconciles an uploaded dataset instead of replac
   `raw_documents` holds the extracted fields; uploads without PDFs keep the previous ones, so
   editing an amount in the CSV and re-uploading makes the PDF disagree with the books.
 - IMS reasons stay templated on purpose (see CLAUDE.md decisions).
+
+## 9c. Report and evaluation (built in M6)
+
+- **Audit report** (`halfca/report/pdf.py`, `templates/audit.html.j2` + `audit.css`):
+  `context()` gathers everything from the same router functions the screens use; Jinja +
+  WeasyPrint render ~13 A4 pages (summary, ITC waterfall, tax heads, funnel, road failures,
+  supplier ring + Benford, IMS actions, discrepancy register, unmatched queue, other checks,
+  method, and an appendix with the evidence chain of every finding that drives an action).
+  `make report` → `data/audit-report-2026-09.pdf`; `GET /api/report.pdf`; the Liability button
+  fetches it with a "Preparing…" state. Renders in ~4 s locally; cached in `data/reports/`.
+  Charts are inline SVG built in Python. Brand fonts are bundled (variable TTFs work in
+  WeasyPrint 70; do not put weight ranges in `@font-face`, WeasyPrint ignores them noisily).
+  Preview pages with `pdftoppm -png -r 80 file.pdf out`.
+- **Evaluation** (`halfca/eval.py`, `make eval`, `make eval SEEDS="7 11"`): generates random
+  months, reads them back through the upload loaders, reconciles without a model (stage 4
+  skipped; `--llm` to use the configured one) and scores per invoice against the truth labels.
+  Writes `data/eval/eval.json` and `docs/EVAL.md` (committed). Last run, 10 months: overall
+  recall 99.9%, precision 90%; every type 100% except D09 precision (clean invoices genuinely
+  unpaid past the 30-day terms, which the generator does not label) and D16 (the hugger's other
+  ₹45–50k invoices). Always present these as measured on synthetic data.
 
 ## 10. Conventions that are easy to miss
 

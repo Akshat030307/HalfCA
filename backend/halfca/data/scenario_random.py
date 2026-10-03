@@ -157,22 +157,34 @@ class RandomBuilder:
 
     # ── injections ──
     def inject(self) -> None:
-        codes = list(RATES)
-        weights = [RATES[c] for c in codes]
+        paper = [c for c in RATES if c not in ROAD]
+        weights = [RATES[c] for c in paper]
         clean = 1 - sum(weights)
         for p in list(self.plans):
             if p.labels:  # D15/D16 invoices stay otherwise clean
                 continue
-            code = self.rng.choices(codes + ["clean"], weights + [clean])[0]
+            code = self.rng.choices(paper + ["clean"], weights + [clean])[0]
             if code == "clean":
                 continue
             if code in INWARD_ONLY and p.direction != "inward":
                 continue
-            if code in ROAD and not self.eligible(p):
-                continue
-            if code == "D13" and len(geo.load().leg_from(p.party.city).plazas) < 2:
-                continue  # one crossing cannot time a journey
             self.apply(p, code)
+        # Road codes: only inter-state purchases of ₹50,000+ can carry them, so draw the
+        # catalogue's share of *all* invoices from that pool. (Drawing per invoice, as above,
+        # would drop the ~85% of draws that land on invoices without an e-way bill.)
+        n = len(self.plans)
+        for code in sorted(ROAD):
+            k = sum(self.rng.random() < RATES[code] for _ in range(n))
+            pool = [
+                p
+                for p in self.plans
+                if not p.labels
+                and self.eligible(p)
+                and p.road == "auto"
+                and (code != "D13" or len(geo.load().leg_from(p.party.city).plazas) >= 2)
+            ]
+            for p in self.rng.sample(pool, min(k, len(pool))):
+                self.apply(p, code)
 
     def apply(self, p: InvoicePlan, code: str) -> None:
         r = self.rng

@@ -1,14 +1,16 @@
 "use client";
 
-import { FileDown } from "lucide-react";
+import { FileDown, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
+import { useState } from "react";
 
 import { BenfordChart } from "@/components/charts/benford";
 import { Waterfall } from "@/components/charts/waterfall";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CountUp } from "@/components/ui/count-up";
 import { ErrorState, LoadingBlocks } from "@/components/ui/states";
-import type { Benford, Liability } from "@/lib/api";
+import { api, type Benford, type Liability } from "@/lib/api";
 import { inr, lakh, lakhNumber } from "@/lib/format";
 import { useApi } from "@/lib/hooks";
 
@@ -39,6 +41,51 @@ function NetBar({
       </span>
       <span className="text-right font-display text-[22px] leading-none text-ink">
         {lakhNumber(value).toFixed(1)}
+      </span>
+    </div>
+  );
+}
+
+/** Fetches the audit PDF (the first render takes a few seconds) and saves it. */
+function ReportButton() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function download() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(api.reportUrl);
+      if (!res.ok) throw new Error(res.statusText || `HTTP ${res.status}`);
+      const blob = await res.blob();
+      const name =
+        /filename="?([^";]+)"?/.exec(res.headers.get("content-disposition") ?? "")?.[1] ??
+        "Half-CA-audit-report.pdf";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Download failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-3">
+      <Button onClick={() => void download()} disabled={busy}>
+        {busy ? <Loader2 size={15} className="animate-spin" /> : <FileDown size={15} />}
+        {busy ? "Preparing the report…" : "Download audit report (PDF)"}
+      </Button>
+      <span className="text-[12px] text-muted">
+        {error ? (
+          <span className="text-bad">Could not build the report: {error}</span>
+        ) : (
+          "Every finding with its evidence, ready to hand to your CA."
+        )}
       </span>
     </div>
   );
@@ -172,14 +219,7 @@ export function LiabilityScreen() {
             IGST credit left over after IGST is set off against CGST and SGST, so a negative head is
             normal; the total is what you pay.
           </p>
-          <button
-            type="button"
-            disabled
-            title="The audit report arrives in M6"
-            className="mt-4 inline-flex items-center gap-2 rounded-full border-2 border-dashed border-line px-4 py-2 text-[13px] font-semibold text-muted"
-          >
-            <FileDown size={15} /> Download audit report (PDF) · coming soon
-          </button>
+          <ReportButton />
         </Card>
       </div>
     </div>

@@ -425,6 +425,7 @@ export const api = {
   reconcile: (period?: string) => post<Job>(`/reconcile${period ? `?period=${period}` : ""}`),
   job: (id: string) => request<Job>(`/jobs/${id}`),
   demoPackUrl: "/api/demo-pack.zip",
+  reportUrl: "/api/report.pdf",
 };
 
 // ── copilot ──────────────────────────────────────────────────────────────────

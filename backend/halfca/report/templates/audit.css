@@ -1,0 +1,228 @@
+/* Half CA audit report. Light theme of the app (peach paper, ink outlines, orange brand),
+   tuned for A4 print. WeasyPrint has no box-shadow, so the "sticker" offset shadow is a
+   thicker right and bottom border. */
+
+@page {
+  size: A4;
+  margin: 15mm 14mm 16mm;
+  @bottom-left {
+    font: 7.5pt Inter;
+    color: #7b6352;
+  }
+  @bottom-right {
+    content: "Page " counter(page) " of " counter(pages);
+    font: 7.5pt Inter;
+    color: #7b6352;
+  }
+}
+
+* { box-sizing: border-box; }
+html { font-family: Inter, sans-serif; font-size: 9pt; color: #1c130c; line-height: 1.42; }
+body { margin: 0; }
+b { font-weight: 600; }
+p { margin: 0 0 5pt; }
+.mono { font-family: "JetBrains Mono", Inter, monospace; font-size: 0.93em; }
+.small { font-size: 7.8pt; color: #4d3b2e; }
+.num { text-align: right; white-space: nowrap; }
+.b { font-weight: 700; }
+.orange { color: #f26b1d; }
+.red { color: #dc2626; }
+.green { color: #16a34a; }
+.ok-t { color: #16a34a; }
+.bad-t { color: #dc2626; }
+.good { color: #16a34a; font-weight: 600; }
+
+/* ── cover ─────────────────────────────────────────────────────────────── */
+.cover {
+  background: #ffe2cc;
+  border: 1.5pt solid #1c130c;
+  border-right-width: 4pt;
+  border-bottom-width: 4pt;
+  border-radius: 12pt;
+  padding: 12pt 16pt 10pt;
+  margin-bottom: 10pt;
+}
+.brand { display: flex; align-items: center; gap: 9pt; }
+.wordmark { font-family: Anton; font-size: 20pt; letter-spacing: 0.5pt; line-height: 1; }
+.tag { font-size: 7.5pt; color: #7b6352; }
+.chips { margin-left: auto; display: flex; gap: 5pt; }
+.chip {
+  border: 1.2pt solid #1c130c;
+  border-radius: 20pt;
+  padding: 2pt 8pt;
+  font-size: 7.5pt;
+  font-weight: 700;
+  background: #f26b1d;
+  white-space: nowrap;
+}
+.chip.warn { background: #fff8f0; color: #a06e00; border-color: #c98a00; }
+h1 {
+  font-family: Anton;
+  font-weight: normal;
+  font-size: 30pt;
+  line-height: 1.02;
+  text-transform: uppercase;
+  margin: 10pt 0 8pt;
+  letter-spacing: 0.3pt;
+}
+.who { width: 100%; border-collapse: collapse; font-size: 8.2pt; }
+.who th { text-align: left; color: #7b6352; font-weight: 600; width: 13%; padding: 1.5pt 0; }
+.who td { padding: 1.5pt 8pt 1.5pt 0; }
+
+/* ── KPI row ───────────────────────────────────────────────────────────── */
+.kpis { display: flex; gap: 6pt; margin-bottom: 10pt; }
+.kpi {
+  flex: 1;
+  background: #fff8f0;
+  border: 1.2pt solid #1c130c;
+  border-right-width: 3pt;
+  border-bottom-width: 3pt;
+  border-radius: 9pt;
+  padding: 6pt 8pt;
+}
+.kpi .k { font-size: 6.8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6pt; color: #7b6352; }
+.kpi .v { font-family: Anton; font-size: 20pt; line-height: 1.1; }
+.kpi .s { font-size: 7pt; color: #7b6352; }
+.kpi.ok .v { color: #16a34a; }
+.kpi.warn .v { color: #c98a00; }
+.kpi.dup .v { color: #7c3aed; }
+.kpi.idle .v { color: #64748b; }
+.kpi.hero { background: #f26b1d; }
+.kpi.hero .k, .kpi.hero .s { color: #1c130c; }
+
+/* ── cards and layout ──────────────────────────────────────────────────── */
+.two { display: flex; gap: 9pt; }
+.two > * { flex: 1; min-width: 0; }
+.three { display: flex; gap: 8pt; }
+.three > * { flex: 1; }
+.card {
+  background: #fff8f0;
+  border: 1.2pt solid #1c130c;
+  border-right-width: 3pt;
+  border-bottom-width: 3pt;
+  border-radius: 10pt;
+  padding: 8pt 10pt;
+  margin-bottom: 8pt;
+  break-inside: avoid;
+}
+.card.act { background: #fff1e4; }
+h3 { font-family: "Space Grotesk"; font-weight: 700; font-size: 10pt; margin: 0 0 5pt; }
+.lead { font-size: 10pt; }
+.formula {
+  font-family: "JetBrains Mono", Inter;
+  font-size: 8pt;
+  background: #ffdcc2;
+  border-radius: 6pt;
+  padding: 4pt 6pt;
+  margin-top: 6pt;
+}
+.block { margin-top: 12pt; }
+.block.keep { break-inside: avoid; }
+table.grid td.b { white-space: nowrap; }
+h2 {
+  font-family: Anton;
+  font-weight: normal;
+  font-size: 16pt;
+  text-transform: uppercase;
+  letter-spacing: 0.3pt;
+  margin: 0 0 6pt;
+  break-after: avoid;
+}
+h2 span {
+  display: inline-block;
+  background: #f26b1d;
+  border: 1.2pt solid #1c130c;
+  border-radius: 50%;
+  width: 17pt;
+  height: 17pt;
+  line-height: 15pt;
+  text-align: center;
+  font-size: 10pt;
+  margin-right: 5pt;
+  vertical-align: 2pt;
+}
+
+/* ── tables ────────────────────────────────────────────────────────────── */
+table.grid { width: 100%; border-collapse: collapse; margin: 4pt 0 6pt; font-size: 8pt; }
+table.grid th {
+  text-align: left;
+  font-size: 6.8pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+  color: #7b6352;
+  font-weight: 700;
+  border-bottom: 1.2pt solid #1c130c;
+  padding: 3pt 4pt;
+}
+table.grid th.num { text-align: right; }
+table.grid td { border-bottom: 0.6pt solid #ebcfb8; padding: 3pt 4pt; vertical-align: top; }
+table.grid tr { break-inside: avoid; }
+table.grid tr.total td { border-top: 1.2pt solid #1c130c; border-bottom: none; font-weight: 700; }
+table.mini { width: 100%; border-collapse: collapse; font-size: 8.2pt; margin-bottom: 4pt; }
+table.mini td { padding: 2.5pt 0; border-bottom: 0.6pt solid #ebcfb8; }
+.funnel .bar-col { width: 34%; }
+.bar { height: 9pt; background: #f26b1d; border: 0.8pt solid #1c130c; border-radius: 4pt; }
+.bar.gold { background: #c99a1a; }
+table.types td, table.types th { text-align: center; }
+.register td { font-size: 7.6pt; }
+
+.pill {
+  display: inline-block;
+  border-radius: 20pt;
+  padding: 0.5pt 6pt;
+  font-size: 6.8pt;
+  font-weight: 700;
+  border: 0.8pt solid;
+  white-space: nowrap;
+}
+.pill.ok { color: #16a34a; border-color: #16a34a; background: #e9f7ee; }
+.pill.warn { color: #a06e00; border-color: #c98a00; background: #fbf3dc; }
+.pill.bad { color: #dc2626; border-color: #dc2626; background: #fde9e9; }
+.pill.dup { color: #7c3aed; border-color: #7c3aed; background: #f1eafd; }
+
+/* ── credit ────────────────────────────────────────────────────────────── */
+.rings { margin: 0 0 6pt; padding-left: 14pt; font-weight: 600; color: #dc2626; }
+.risk-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.score { text-align: right; font-size: 8pt; }
+.score b { display: block; font-family: Anton; font-size: 20pt; font-weight: normal; color: #dc2626; line-height: 1; }
+.score span { color: #7b6352; font-size: 7pt; }
+.signals { margin: 2pt 0 4pt; padding-left: 12pt; font-size: 8pt; color: #b91c1c; }
+.action { background: #ffdcc2; border-radius: 6pt; padding: 4pt 6pt; font-size: 8.2pt; margin: 4pt 0 0; }
+
+/* ── method ────────────────────────────────────────────────────────────── */
+.method p { font-size: 8.2pt; }
+
+/* ── appendix ──────────────────────────────────────────────────────────── */
+.appendix { break-before: page; }
+h3.group {
+  margin: 10pt 0 5pt;
+  font-size: 9.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.6pt;
+  color: #7b6352;
+  border-bottom: 1.2pt solid #1c130c;
+  padding-bottom: 2pt;
+  break-after: avoid;
+}
+.ev {
+  border-left: 2.5pt solid #f26b1d;
+  padding: 3pt 0 4pt 7pt;
+  margin-bottom: 6pt;
+  break-inside: avoid;
+  font-size: 7.8pt;
+}
+.ev-head { font-size: 8.2pt; }
+.ev-head .stake { float: right; font-family: "JetBrains Mono", Inter; color: #7b6352; }
+.ev-title { margin: 1.5pt 0; }
+.ev-diff { display: flex; gap: 14pt; font-family: "JetBrains Mono", Inter; font-size: 7.4pt; margin: 1pt 0 2pt; }
+table.chain { border-collapse: collapse; width: 100%; font-size: 7.4pt; }
+table.chain td { padding: 1pt 4pt 1pt 0; vertical-align: top; }
+table.chain td.src {
+  width: 46pt;
+  text-transform: uppercase;
+  font-size: 6.2pt;
+  font-weight: 700;
+  letter-spacing: 0.5pt;
+  color: #7b6352;
+}
+.note { font-size: 7.4pt; color: #7b6352; font-style: italic; }

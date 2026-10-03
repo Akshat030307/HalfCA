@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Half CA audit report · {{ company }} · {{ period_label }}</title>
+<style>
+@font-face { font-family: Anton; src: url("{{ fonts.Anton }}"); }
+@font-face { font-family: Inter; src: url("{{ fonts.Inter }}"); }
+@font-face { font-family: "Space Grotesk"; src: url("{{ fonts.SpaceGrotesk }}"); }
+@font-face { font-family: "JetBrains Mono"; src: url("{{ fonts.JetBrainsMono }}"); }
+{% include "audit.css" %}
+@page {
+  @bottom-left { content: "Half CA · {{ company }} · {{ period_label }} · Synthetic data"; }
+}
+</style>
+</head>
+<body>
+
+{# ── cover ─────────────────────────────────────────────────────────────── #}
+<header class="cover">
+  <div class="brand">
+    <svg class="badge" viewBox="0 0 64 64" width="46" height="46">
+      <defs>
+        <clipPath id="t"><rect x="0" y="0" width="64" height="32"/></clipPath>
+        <clipPath id="b"><rect x="0" y="32" width="64" height="32"/></clipPath>
+      </defs>
+      <circle cx="32" cy="32" r="29" fill="#FF7A1A" clip-path="url(#t)"/>
+      <circle cx="32" cy="32" r="29" fill="#1C130C" clip-path="url(#b)"/>
+      <text x="32" y="43" fill="#1C130C" clip-path="url(#t)" font-family="Anton" font-size="30" text-anchor="middle">CA</text>
+      <text x="32" y="43" fill="#FF8A3D" clip-path="url(#b)" font-family="Anton" font-size="30" text-anchor="middle">CA</text>
+      <circle cx="32" cy="32" r="29" fill="none" stroke="#1C130C" stroke-width="2.5"/>
+    </svg>
+    <div>
+      <div class="wordmark">HALF CA</div>
+      <div class="tag">follows the goods</div>
+    </div>
+    <div class="chips">
+      <span class="chip">Audit report</span>
+      <span class="chip warn">Synthetic data</span>
+    </div>
+  </div>
+  <h1>GST reconciliation<br>{{ period_label }}</h1>
+  <table class="who">
+    <tr><th>Business</th><td><b>{{ company }}</b> · {{ city }}</td>
+        <th>Data as of</th><td>{{ as_of }}</td></tr>
+    <tr><th>GSTIN</th><td class="mono">{{ gstin }}</td>
+        <th>Generated</th><td>{{ generated }}</td></tr>
+    <tr><th>Period</th><td>{{ period }} · GSTR-2B on {{ gstr2b }}</td>
+        <th>Dataset</th><td class="mono">{{ dataset_id }} · {{ scenario }}</td></tr>
+  </table>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="k">Reconciled</div><div class="v">{{ kpis.reconciled|count }}</div><div class="s">invoices</div></div>
+  <div class="kpi ok"><div class="k">Matched</div><div class="v">{{ kpis.matched|count }}</div><div class="s">{{ kpis.clean_match_pct|pct }} clean</div></div>
+  <div class="kpi warn"><div class="k">Discrepancies</div><div class="v">{{ kpis.discrepancies }}</div><div class="s">invoices</div></div>
+  <div class="kpi dup"><div class="k">Duplicates</div><div class="v">{{ kpis.duplicates }}</div><div class="s">double bookings</div></div>
+  <div class="kpi idle"><div class="k">Unmatched</div><div class="v">{{ kpis.unmatched }}</div><div class="s">no partner</div></div>
+  <div class="kpi hero"><div class="k">Exposure caught</div><div class="v">{{ kpis.exposure|lakh }}</div><div class="s">before filing</div></div>
+</section>
+
+<section class="two">
+  <div class="card">
+    <h3>The bottom line</h3>
+    <p class="lead">Net GST payable goes from <b>{{ liability.net_payable_filed|lakh }}</b> as filed to
+      <b class="orange">{{ liability.net_payable_reconciled|lakh }}</b> once the month is reconciled
+      ({{ '+' if change >= 0 else '' }}{{ change|lakh }}).</p>
+    <p>Output tax is {{ liability.output_tax_reconciled|lakh }}{% if liability.under_reported_output > 0 %}, of which {{ liability.under_reported_output|lakh }} was under-reported{% else %} either way{% endif %}.
+      Of the {{ liability.itc_claimed|lakh }} input tax credit that would be claimed as filed,
+      {{ liability.itc_rejected|lakh }} should be rejected and {{ liability.itc_at_risk|lakh }} held back,
+      leaving {{ liability.itc_eligible|lakh }} eligible.</p>
+    <p class="formula">Output tax {{ liability.output_tax_reconciled|lakh }} − eligible ITC {{ liability.itc_eligible|lakh }} = {{ liability.net_payable_reconciled|lakh }}</p>
+  </div>
+  <div class="card act">
+    <h3>Act on IMS before {{ gstr2b }}</h3>
+    <table class="mini">
+      <tr><td><span class="pill bad">Reject</span></td><td class="num">{{ ims_counts.reject }}</td><td class="num">{{ liability.itc_rejected|lakh }}</td></tr>
+      <tr><td><span class="pill warn">Keep pending</span></td><td class="num">{{ ims_counts.pending }}</td><td class="num">{{ liability.itc_at_risk|lakh }}</td></tr>
+      <tr><td><span class="pill ok">Accept</span></td><td class="num">{{ ims_counts.accept }}</td><td class="num">{{ accept_itc|lakh }}</td></tr>
+    </table>
+    <p class="small">Supplier invoices not actioned on IMS by then are deemed accepted into ITC.
+      {% if ims_counts.approved %}{{ ims_counts.approved }} accepts were approved in Half CA{% if approved_at %} ({{ approved_at[:16]|replace('T', ' ') }} UTC){% endif %}.{% endif %}</p>
+    <p class="small"><b>{{ physical.failed }}</b> invoices passed every paper check but failed the road;
+      <b>{{ rings|length }}</b> circular-trading ring{{ '' if rings|length == 1 else 's' }} found upstream.</p>
+  </div>
+</section>
+
+{# ── 1 · ITC and liability ──────────────────────────────────────────────── #}
+<section class="block">
+  <h2><span>1</span> Input tax credit and what you owe</h2>
+  <div class="two">
+    <div class="card">
+      <h3>Input tax credit · ₹ lakh</h3>
+      {{ waterfall_svg|safe }}
+    </div>
+    <div class="card">
+      <h3>Net payable by tax head (reconciled)</h3>
+      <table class="grid">
+        <thead><tr><th>Head</th><th class="num">Output</th><th class="num">Eligible ITC</th><th class="num">Net</th></tr></thead>
+        <tbody>
+        {% for h in heads %}
+          <tr><td>{{ h.head }}</td><td class="num mono">{{ h.output_reconciled|inr }}</td><td class="num mono">{{ h.itc_eligible|inr }}</td><td class="num mono">{{ h.net_reconciled|inr }}</td></tr>
+        {% endfor %}
+          <tr class="total"><td>Total</td>
+            <td class="num mono">{{ heads|sum(attribute='output_reconciled')|inr }}</td>
+            <td class="num mono">{{ heads|sum(attribute='itc_eligible')|inr }}</td>
+            <td class="num mono">{{ heads|sum(attribute='net_reconciled')|inr }}</td></tr>
+        </tbody>
+      </table>
+      <p class="small">IGST credit left after setting off IGST is used against CGST and SGST, so a
+        negative head is normal; the total is what is paid. As filed: net
+        {{ liability.net_payable_filed|lakh }} on ITC of {{ liability.itc_claimed|lakh }}.</p>
+    </div>
+  </div>
+</section>
+
+{# ── 2 · Matching ───────────────────────────────────────────────────────── #}
+<section class="block keep">
+  <h2><span>2</span> Matching: cheapest rules first</h2>
+  <table class="grid funnel">
+    <thead><tr><th>Stage</th><th>Method</th><th class="num">In</th><th class="bar-col"></th><th class="num">Paired</th><th class="num">Left</th></tr></thead>
+    <tbody>
+    {% set first = funnel[0].records_in or 1 %}
+    {% for st in funnel %}
+      <tr>
+        <td><b>{{ st.stage }}. {{ st.label }}</b></td>
+        <td class="small">{{ st.method }}{% if st.stage == 4 %}{% if st.skipped %} · skipped: no AI model{% elif llm.model %} · {{ llm.model }}{% endif %}{% endif %}</td>
+        <td class="num mono">{{ st.records_in|count }}</td>
+        <td class="bar-col"><div class="bar {{ 'gold' if st.stage == 4 else '' }}" style="width: {{ [100 * st.records_in / first, 4]|max }}%"></div></td>
+        <td class="num mono">{{ '—' if st.skipped else st.paired|count }}</td>
+        <td class="num mono">{{ st.left|count }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="small">Each stage only sees what the one before could not pair. Stage 4 lets the model
+    choose among candidates the rules shortlisted, or none; it never produces a number.</p>
+  <table class="grid types">
+    <thead><tr>{% for t in types %}<th class="num">{{ t.label }}</th>{% endfor %}</tr></thead>
+    <tbody><tr>{% for t in types %}<td class="num mono">{{ t.count }}</td>{% endfor %}</tr></tbody>
+  </table>
+</section>
+
+{# ── 3 · Follow the goods ───────────────────────────────────────────────── #}
+<section class="block">
+  <h2><span>3</span> Follow the goods: e-way bills against toll crossings</h2>
+  <p>{{ physical.checked }} inter-state purchases of ₹50,000 or more were checked against the
+    trucks' toll crossings: <b class="ok-t">{{ physical.verified }} verified</b>,
+    <b class="bad-t">{{ physical.failed }} failed</b>{% if physical.failed_inside_matched %}, all
+    {{ physical.failed_inside_matched }} of them clean on paper{% endif %}. A truck averaging more than
+    {{ speed_limit|int }} km/h between tolls is treated as impossible.</p>
+  {% if road %}
+  <table class="grid">
+    <thead><tr><th>Invoice</th><th>Supplier</th><th>Verdict</th><th>E-way bill · vehicle</th><th>What the road says</th><th class="num">ITC at stake</th></tr></thead>
+    <tbody>
+    {% for t in road %}
+      <tr>
+        <td class="mono b">{{ t.invoice_no }}</td>
+        <td>{{ t.supplier }}</td>
+        <td><span class="pill bad">{{ t.finding.label if t.finding else t.verdict }}</span></td>
+        <td class="mono small">{{ t.ewb_no|ewb }}<br>{{ t.vehicle_no or '—' }}</td>
+        <td class="small">{{ t.finding.recorded if t.finding else '' }}</td>
+        <td class="num mono">{{ (t.finding.impact if t.finding else 0)|inr }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="good">Every consignment checked was seen at the toll plazas on its route.</p>
+  {% endif %}
+</section>
+
+{# ── 4 · Follow the credit ──────────────────────────────────────────────── #}
+<section class="block">
+  <h2><span>4</span> Follow the credit: the supplier network</h2>
+  {% if rings %}
+  <p>{{ rings|length }} circular-trading ring{{ '' if rings|length == 1 else 's' }} found within reach of your suppliers:</p>
+  <ul class="rings">{% for r in rings %}<li>{{ r|join(' → ') }} → {{ r[0] }}</li>{% endfor %}</ul>
+  {% else %}
+  <p class="good">No circular-trading ring reaches your suppliers.</p>
+  {% endif %}
+  {% for s in risky %}
+  <div class="card risk">
+    <div class="risk-head">
+      <div><h3>{{ s.name }}</h3><div class="mono small">{{ s.gstin }} · {{ s.state or '' }}</div></div>
+      <div class="score">Taint <b>{{ '%.2f'|format(s.risk) }}</b><span>at-risk line {{ taint_threshold }}</span></div>
+    </div>
+    <p>Credit chain: <b>{{ s.path_names|join(' → ') }}</b>{% if s.hops_to_you %} ({{ s.hops_to_you }} hops from the ring to you){% endif %}.</p>
+    {% if s.ring_signals %}
+    <ul class="signals">{% for sig in s.ring_signals %}<li>{{ sig }}</li>{% endfor %}</ul>
+    {% endif %}
+    <table class="grid">
+      <thead><tr><th>Invoice</th><th>Date</th><th class="num">Total</th><th class="num">ITC</th><th>IMS</th></tr></thead>
+      <tbody>
+      {% for i in s.invoices %}
+        <tr><td class="mono b">{{ i.invoice_no }}</td><td>{{ i.invoice_date|date }}</td><td class="num mono">{{ i.total|inr }}</td><td class="num mono">{{ i.itc|inr }}</td><td><span class="pill warn">{{ i.ims_decision or '—' }}</span></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="action"><b>Action:</b> {{ s.action }} ITC at risk: <b>{{ s.itc_at_risk|lakh }}</b>.</p>
+  </div>
+  {% endfor %}
+  {% if benford %}
+  <div class="card">
+    <h3>Benford screen · {{ benford.name }} · {{ benford.n }} invoices</h3>
+    {{ benford_svg|safe }}
+    <p class="small">Bars: observed first digits 1–9. Dashed line: Benford's expected share.
+      First-digit MAD <b class="mono">{{ '%.3f'|format(benford.mad) }}</b> against a threshold of
+      {{ benford.threshold }}: {{ 'nonconforming' if benford.nonconforming else 'conforming' }}.</p>
+  </div>
+  {% endif %}
+</section>
+
+{# ── 5 · IMS actions ────────────────────────────────────────────────────── #}
+<section class="block">
+  <h2><span>5</span> IMS: what to reject and what to hold</h2>
+  <p>Decided by rules, in order: not in your books → Pending; tax or amount wrong → Reject; goods
+    failed the road → Reject; supplier taint ≥ {{ taint_threshold }} → Pending; otherwise Accept.
+    {{ ims_counts.accept }} records are Accept and are not listed.</p>
+  <table class="grid">
+    <thead><tr><th>Supplier</th><th>Invoice</th><th>Date</th><th class="num">ITC</th><th>Call</th><th>Reason</th></tr></thead>
+    <tbody>
+    {% for r in actions %}
+      <tr><td>{{ r.supplier_name }}</td><td class="mono b">{{ r.invoice_no }}</td><td>{{ r.invoice_date|date }}</td>
+        <td class="num mono">{{ r.itc|inr }}</td>
+        <td><span class="pill {{ 'bad' if r.decision == 'Reject' else 'warn' }}">{{ r.decision }}</span></td>
+        <td class="small">{{ r.reason }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{# ── 6 · Discrepancies register ─────────────────────────────────────────── #}
+<section class="block">
+  <h2><span>6</span> Discrepancies and duplicates</h2>
+  <p>{{ register|length }} findings on reconciled invoices, biggest ₹ first. The evidence for each is
+    in the appendix.</p>
+  <table class="grid register">
+    <thead><tr><th>Invoice</th><th>Counterparty</th><th>Type</th><th>Recorded</th><th>Expected</th><th class="num">₹ at stake</th></tr></thead>
+    <tbody>
+    {% for f in register %}
+      <tr><td class="mono b">{{ f.ref }}</td><td>{{ f.counterparty }}</td>
+        <td><span class="pill {{ 'dup' if f.category == 'duplicate' else 'warn' }}">{{ f.label }}</span></td>
+        <td class="mono small red">{{ f.recorded or '—' }}</td><td class="mono small green">{{ f.expected or '—' }}</td>
+        <td class="num mono">{{ f.impact|inr }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{# ── 7 · Unmatched ──────────────────────────────────────────────────────── #}
+<section class="block">
+  <h2><span>7</span> Unmatched queue</h2>
+  <p>{{ unmatched|length }} invoices have no entry in the books, biggest ₹ first.</p>
+  <table class="grid">
+    <thead><tr><th>Invoice</th><th>Date</th><th>Counterparty</th><th>Type</th><th>Money</th><th class="num">Total</th></tr></thead>
+    <tbody>
+    {% for u in unmatched %}
+      <tr><td class="mono b">{{ u.invoice_no }}</td><td>{{ u.invoice_date|date }}</td><td>{{ u.counterparty }}</td>
+        <td>{{ 'Purchase' if u.direction == 'inward' else 'Sale' }}</td><td class="small">{{ 'Paid, never booked' if u.paid else 'No payment' }}</td>
+        <td class="num mono">{{ u.total|inr }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+{# ── 8 · Other checks ───────────────────────────────────────────────────── #}
+<section class="block">
+  <h2><span>8</span> Other checks</h2>
+  <div class="three">
+    <div class="card"><h3>Gaps</h3>
+      <table class="mini">{% for k, n in gaps.items() %}<tr><td>{{ k }}</td><td class="num mono">{{ n }}</td></tr>{% else %}<tr><td>None</td></tr>{% endfor %}</table></div>
+    <div class="card"><h3>Anomalies</h3>
+      <table class="mini">{% for k, n in anomalies.items() %}<tr><td>{{ k }}</td><td class="num mono">{{ n }}</td></tr>{% else %}<tr><td>None</td></tr>{% endfor %}</table></div>
+    <div class="card"><h3>Inputs</h3>
+      <table class="mini">
+        <tr><td>GSTINs validated</td><td class="num mono">{{ gstins.checked or 0 }}</td></tr>
+        <tr><td>Invalid GSTINs</td><td class="num mono">{{ gstins.invalid or 0 }}</td></tr>
+        {% if documents.documents %}
+        <tr><td>Invoice PDFs read by AI</td><td class="num mono">{{ documents.read or 0 }} / {{ documents.documents }}</td></tr>
+        <tr><td>PDFs agreeing with the register</td><td class="num mono">{{ documents.agree or 0 }}</td></tr>
+        {% if documents.differ %}<tr><td>PDFs that disagree</td><td class="num mono">{{ documents.differ }}</td></tr>{% endif %}
+        {% endif %}
+      </table></div>
+  </div>
+</section>
+
+{# ── 9 · Method ─────────────────────────────────────────────────────────── #}
+<section class="block method">
+  <h2><span>9</span> How this was checked</h2>
+  <div class="two">
+    <div>
+      <p><b>Four threads.</b> Every invoice is matched to its books entry (exact number, normalised
+        number, then amount + date + party name), then linked to the bank payment, the supplier's
+        IMS record and, for inter-state goods of ₹50,000 or more, the e-way bill and the truck's
+        toll crossings.</p>
+      <p><b>Tax.</b> Rates are checked against the HSN rate for the date of supply (GST 2.0 slabs
+        0/5/18/40% from 22 Sep 2025; 12% and 28% abolished). The tax head follows the supplier
+        state and the place of supply. Tax arithmetic is recomputed to ±₹1.</p>
+      <p><b>Supplier network.</b> Circular-trading rings (cycles of up to 6 firms) within 3 hops of
+        your suppliers taint the credit that flows through them (×0.9 per hop). Suppliers at
+        {{ taint_threshold }} or above are held Pending.</p>
+    </div>
+    <div>
+      <p><b>The AI's part.</b> A language model{% if llm.model %} ({{ llm.model }}){% endif %} only picks among
+        match candidates the rules shortlisted, reads invoice PDFs (every value it reads is checked
+        against the document's own text), and words the copilot's answers. Every amount, decision
+        and total in this report is computed by deterministic code.</p>
+      <p><b>Limits.</b> Toll-crossing and upstream supplier data are held by tax authorities and
+        aggregators in reality; here they are synthetic, like every company, GSTIN and person in
+        this report. The report is a decision aid, not a filed return.</p>
+    </div>
+  </div>
+</section>
+
+{# ── appendix: evidence ─────────────────────────────────────────────────── #}
+<section class="appendix">
+  <h2><span>A</span> Evidence for every finding</h2>
+  <p>{{ appendix_count }} findings that drive an action, each with what was recorded, what was
+    expected and the source records behind it.</p>
+  {% for group in appendix %}
+  <h3 class="group">{{ group.title }} · {{ group['items']|length }}</h3>
+  {% for f in group['items'] %}
+  <div class="ev">
+    <div class="ev-head">
+      <span class="pill {{ {'physical': 'bad', 'credit': 'bad', 'duplicate': 'dup'}.get(f.category, 'warn') }}">{{ f.label }}</span>
+      <b class="mono">{{ f.ref }}</b> · {{ f.counterparty }}
+      <span class="stake">{{ f.impact|inr }} at stake</span>
+    </div>
+    <div class="ev-title">{{ f.title }}. {{ f.summary }}</div>
+    {% if f.recorded or f.expected %}
+    <div class="ev-diff"><span class="red">Recorded: {{ f.recorded or '—' }}</span><span class="green">Expected: {{ f.expected or '—' }}</span></div>
+    {% endif %}
+    {% if f.chain %}
+    <table class="chain">
+      {% for c in f.chain %}
+      <tr><td class="src">{{ c.source }}</td><td><b>{{ c.label }}</b>{% for k, v in c.fields.items() %} · {{ k|label }} <span class="mono">{{ v|field(k) }}</span>{% endfor %}</td></tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+    {% for n in f.notes %}<div class="note">{{ n }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  {% endfor %}
+</section>
+
+</body>
+</html>
