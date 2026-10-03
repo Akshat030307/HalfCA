@@ -3,12 +3,12 @@
 import {
   BookOpen,
   Check,
+  Download,
   FileText,
   FolderOpen,
   Inbox,
   Landmark,
   Loader2,
-  RotateCcw,
   Sparkles,
   Truck,
   X,
@@ -370,10 +370,7 @@ export function UploadScreen() {
 
       {/* Actions */}
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <Button disabled={busy} onClick={() => void run(api.uploadDemo)}>
-          <Sparkles size={16} /> Use demo dataset
-        </Button>
-        <Button variant="secondary" disabled={busy} onClick={() => folderInput.current?.click()}>
+        <Button disabled={busy} onClick={() => folderInput.current?.click()}>
           <FolderOpen size={16} /> Choose a folder
         </Button>
         <Button variant="secondary" disabled={busy} onClick={() => filesInput.current?.click()}>
@@ -382,13 +379,10 @@ export function UploadScreen() {
         <span className="text-[13px] text-muted">
           …or drop the month&apos;s folder anywhere here.
         </span>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto">
           <ButtonLink href={api.demoPackUrl} variant="ghost" download>
-            Download demo files
+            <Download size={14} /> Download sample folder
           </ButtonLink>
-          <Button variant="ghost" disabled={busy} onClick={() => void run(api.reset)}>
-            <RotateCcw size={14} /> Reset demo
-          </Button>
         </div>
         <input
           ref={folderInput}

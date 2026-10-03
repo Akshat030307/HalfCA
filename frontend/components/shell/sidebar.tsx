@@ -14,9 +14,11 @@ export function Sidebar() {
 
   return (
     <aside className="sticky top-0 flex h-screen w-[248px] shrink-0 flex-col border-r-2 border-ink/10 bg-bg px-5 py-6 dark:border-line">
-      <Link href="/upload/" className="mb-8 block">
+      {/* A full page load: "/" is the landing page, served outside the Next app. */}
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+      <a href="/" className="mb-8 block" title="Back to the Half CA home page">
         <Logo />
-      </Link>
+      </a>
 
       <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-muted">
         Reconcile · Sep 2026

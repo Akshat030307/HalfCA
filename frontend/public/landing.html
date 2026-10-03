@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Half CA — follows the goods</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=Geist:wght@400..700&amp;family=Geist+Mono:wght@400..700&amp;family=Instrument+Serif:ital@0;1&amp;family=Archivo:wdth,wght@62..125,400..900&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#fff0e1;color:#1c130c;font-family:var(--fb);-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:#1c130c}a:hover{color:#7b6352}
+button{font-family:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed}
+:focus-visible{outline:2px solid #1c130c;outline-offset:3px}
+.navlink{color:#1c130c;text-decoration:none;font-size:15px;font-weight:500;padding:12px 4px}
+.navlink:hover{color:#7b6352}
+.chip{display:flex;align-items:center;gap:14px;width:100%;min-height:64px;padding:12px 14px;border:1px dashed #c9a98e;background:transparent;color:#1c130c;text-align:left;border-radius:6px;transition:transform .18s ease,background .18s ease,border-color .18s ease}
+.chip:hover{background:#fff8f0;border-color:#1c130c}
+.chip.on{border-style:solid;border-color:#1c130c;background:#fff8f0;animation:drop .32s cubic-bezier(.2,.9,.3,1.2)}
+.chip .box{width:34px;height:34px;flex:none;border:1.5px solid #1c130c;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:13px;font-weight:700;background:#fff8f0}
+.chip.on .box{background:#1c130c;color:#fff0e1}
+@keyframes drop{0%{transform:translateY(-10px) rotate(-1deg);opacity:.4}100%{transform:none;opacity:1}}
+.step{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #ebcfb8;font-size:15px}
+.step .dot{width:10px;height:10px;border-radius:50%;border:1.5px solid #c9a98e;flex:none}
+.step .st{margin-left:auto;font-family:var(--fm);font-size:11px;letter-spacing:.08em;color:#7b6352}
+.step.done .dot{background:#1c130c;border-color:#1c130c}
+.step.active .dot{background:var(--acc);border-color:#1c130c;animation:pulse .8s ease-in-out infinite}
+.step.active .st{color:#1c130c;font-weight:700}
+.step.skipped{color:#7b6352;text-decoration:line-through;text-decoration-color:#c9a98e}
+.step.todo{color:#7b6352}
+@keyframes pulse{50%{transform:scale(1.5)}}
+.log{font-family:var(--fm);font-size:12.5px;line-height:1.7;color:#fff0e1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log.skip{color:#d9b89c}
+.cursor{display:inline-block;width:8px;height:15px;background:#fff0e1;vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.flag{display:flex;gap:14px;align-items:flex-start;width:100%;padding:14px 0;border:0;border-bottom:1px solid #ebcfb8;background:transparent;color:#1c130c;text-align:left;animation:drop .3s ease both}
+.flag:hover .flagt{text-decoration:underline}
+.tag{font-family:var(--fm);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border:1px solid #1c130c;border-radius:3px;white-space:nowrap}
+.tab{min-height:44px;padding:10px 16px;border:1.5px solid #1c130c;background:transparent;color:#1c130c;border-radius:999px;font-size:14px;font-weight:600}
+.tab:hover{background:#ffdcc2}
+.tab.on{background:#1c130c;color:#fff0e1}
+.route{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0}
+.node{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;font-family:var(--fm);font-weight:700;font-size:16px;transition:all .3s ease}
+.node.ok{background:#1c130c;color:#fff0e1;border:2px solid #1c130c}
+.node.miss{background:var(--acc);color:#1c130c;border:2px dashed #1c130c}
+.seg{flex:1;height:0;border-top:3px solid #1c130c;transition:all .3s ease}
+.seg.broken{border-top:3px dashed #c9a98e}
+.seg.none{border-color:transparent}
+.sdet.miss{color:#1c130c;font-weight:600}
+.seg-btn{min-height:36px;padding:6px 12px;border:1px solid #c9a98e;background:transparent;color:#1c130c;font-size:13px;font-weight:600;border-radius:4px}
+.seg-btn:hover{border-color:#1c130c}
+.seg-btn.on.accept{background:#1c130c;color:#fff0e1;border-color:#1c130c}
+.seg-btn.on.reject{background:#fff8f0;border:1.5px solid #1c130c;text-decoration:line-through}
+.seg-btn.on.pending{background:var(--acc);border-color:#1c130c}
+.imsrow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr) minmax(0,1.6fr) auto;gap:20px;align-items:center;padding:16px 0;border-bottom:1px solid #ebcfb8}
+.mod{display:grid;grid-template-columns:72px minmax(0,1fr) minmax(0,1.4fr);gap:24px;align-items:baseline;padding:22px 8px;border-bottom:1px solid #1c130c;transition:background .15s ease,padding .2s ease}
+.mod:hover{background:#ffdcc2;padding-left:20px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:12px 22px;border-radius:6px;font-size:15px;font-weight:600;text-decoration:none;border:1.5px solid #1c130c}
+.btn.dark{background:#1c130c;color:#fff0e1}
+.btn.dark:hover{background:#3a2a1d;color:#fff0e1}
+.btn.acc{background:var(--acc);color:#1c130c}
+.btn.acc:hover{filter:brightness(1.06);color:#1c130c}
+.btn.ghost{background:transparent;color:#1c130c}
+.btn.ghost:hover{background:#ffdcc2}
+.btn:disabled{opacity:.45}
+.seg.live{border-top:0;height:3px;background:repeating-linear-gradient(90deg,#1c130c 0 14px,var(--acc) 14px 22px);background-size:44px 3px;animation:march 1.1s linear infinite}
+@keyframes march{to{background-position:44px 0}}
+.ticker{display:flex;width:max-content;animation:tick 48s linear infinite}
+.tickwrap:hover .ticker{animation-play-state:paused}
+@keyframes tick{to{transform:translateX(-50%)}}
+.herobox{min-height:min(860px,100vh)}
+.hint-dot{width:8px;height:8px;border-radius:50%;background:var(--acc);border:1.5px solid #1c130c;animation:pulse 1.2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.ticker,.seg.live,.hint-dot{animation:none}}
+@media (max-width:900px){
+.herobox{min-height:980px}
+.route{grid-template-columns:1fr;gap:18px}
+.route .seg{display:none}
+.imsrow{grid-template-columns:1fr 1fr}
+.mod{grid-template-columns:48px 1fr}
+.mod .mdesc{grid-column:2}
+.hidem{display:none !important}
+}
+</style>
+
+<style>
+#fontpick{position:fixed;right:16px;bottom:16px;z-index:50;display:flex;align-items:center;gap:8px;background:#1c130c;color:#fff0e1;padding:8px 10px;border-radius:8px;font:12px/1 'JetBrains Mono',monospace;box-shadow:0 6px 24px rgba(28,19,12,.25)}
+#fontpick select{font:inherit;background:#fff0e1;color:#1c130c;border:0;border-radius:4px;padding:6px 8px}
+#fontpick input{width:28px;height:24px;border:0;padding:0;background:none}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="fontpick"><label for="fp">Fonts</label><select id="fp"></select><label for="ac">Accent</label><input id="ac" type="color"></div>
+<script type="module">
+var e,n,_,t,o,r,u,l={},i=[],c=/acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i;function s(e,n){for(var _ in n)e[_]=n[_];return e}function f(e){var n=e.parentNode;n&&n.removeChild(e)}function a(n,_,t){var o,r,u,l={};for(u in _)"key"==u?o=_[u]:"ref"==u?r=_[u]:l[u]=_[u];if(arguments.length>2&&(l.children=arguments.length>3?e.call(arguments,2):t),"function"==typeof n&&null!=n.defaultProps)for(u in n.defaultProps)void 0===l[u]&&(l[u]=n.defaultProps[u]);return p(n,l,o,r,null)}function p(e,t,o,r,u){var l={type:e,props:t,key:o,ref:r,__k:null,__:null,__b:0,__e:null,__d:void 0,__c:null,__h:null,constructor:void 0,__v:null==u?++_:u};return null!=n.vnode&&n.vnode(l),l}function h(e){return e.children}function d(e,n){this.props=e,this.context=n}function v(e,n){if(null==n)return e.__?v(e.__,e.__.__k.indexOf(e)+1):null;for(var _;n<e.__k.length;n++)if(null!=(_=e.__k[n])&&null!=_.__e)return _.__e;return"function"==typeof e.type?v(e):null}function y(e){var n,_;if(null!=(e=e.__)&&null!=e.__c){for(e.__e=e.__c.base=null,n=0;n<e.__k.length;n++)if(null!=(_=e.__k[n])&&null!=_.__e){e.__e=e.__c.base=_.__e;break}return y(e)}}function m(e){(!e.__d&&(e.__d=!0)&&t.push(e)&&!g.__r++||r!==n.debounceRendering)&&((r=n.debounceRendering)||o)(g)}function g(){for(var e;g.__r=t.length;)e=t.sort(function(e,n){return e.__v.__b-n.__v.__b}),t=[],e.some(function(e){var n,_,t,o,r,u;e.__d&&(r=(o=(n=e).__v).__e,(u=n.__P)&&(_=[],(t=s({},o)).__v=o.__v+1,P(u,o,t,n.__n,void 0!==u.ownerSVGElement,null!=o.__h?[r]:null,_,null==r?v(o):r,o.__h),D(_,o),o.__e!=r&&y(o)))})}function k(e,n,_,t,o,r,u,c,s,f){var a,d,y,m,g,k,x,H=t&&t.__k||i,E=H.length;for(_.__k=[],a=0;a<n.length;a++)if(null!=(m=_.__k[a]=null==(m=n[a])||"boolean"==typeof m?null:"string"==typeof m||"number"==typeof m||"bigint"==typeof m?p(null,m,null,null,m):Array.isArray(m)?p(h,{children:m},null,null,null):m.__b>0?p(m.type,m.props,m.key,null,m.__v):m)){if(m.__=_,m.__b=_.__b+1,null===(y=H[a])||y&&m.key==y.key&&m.type===y.type)H[a]=void 0;else for(d=0;d<E;d++){if((y=H[d])&&m.key==y.key&&m.type===y.type){H[d]=void 0;break}y=null}P(e,m,y=y||l,o,r,u,c,s,f),g=m.__e,(d=m.ref)&&y.ref!=d&&(x||(x=[]),y.ref&&x.push(y.ref,null,m),x.push(d,m.__c||g,m)),null!=g?(null==k&&(k=g),"function"==typeof m.type&&null!=m.__k&&m.__k===y.__k?m.__d=s=b(m,s,e):s=C(e,m,y,H,g,s),f||"option"!==_.type?"function"==typeof _.type&&(_.__d=s):e.value=""):s&&y.__e==s&&s.parentNode!=e&&(s=v(y))}for(_.__e=k,a=E;a--;)null!=H[a]&&("function"==typeof _.type&&null!=H[a].__e&&H[a].__e==_.__d&&(_.__d=v(t,a+1)),U(H[a],H[a]));if(x)for(a=0;a<x.length;a++)T(x[a],x[++a],x[++a])}function b(e,n,_){var t,o;for(t=0;t<e.__k.length;t++)(o=e.__k[t])&&(o.__=e,n="function"==typeof o.type?b(o,n,_):C(_,o,o,e.__k,o.__e,n));return n}function C(e,n,_,t,o,r){var u,l,i;if(void 0!==n.__d)u=n.__d,n.__d=void 0;else if(null==_||o!=r||null==o.parentNode)e:if(null==r||r.parentNode!==e)e.appendChild(o),u=null;else{for(l=r,i=0;(l=l.nextSibling)&&i<t.length;i+=2)if(l==o)break e;e.insertBefore(o,r),u=r}return void 0!==u?u:o.nextSibling}function x(e,n,_){"-"===n[0]?e.setProperty(n,_):e[n]=null==_?"":"number"!=typeof _||c.test(n)?_:_+"px"}function H(e,n,_,t,o){var r;e:if("style"===n)if("string"==typeof _)e.style.cssText=_;else{if("string"==typeof t&&(e.style.cssText=t=""),t)for(n in t)_&&n in _||x(e.style,n,"");if(_)for(n in _)t&&_[n]===t[n]||x(e.style,n,_[n])}else if("o"===n[0]&&"n"===n[1])r=n!==(n=n.replace(/Capture$/,"")),n=n.toLowerCase()in e?n.toLowerCase().slice(2):n.slice(2),e.l||(e.l={}),e.l[n+r]=_,_?t||e.addEventListener(n,r?S:E,r):e.removeEventListener(n,r?S:E,r);else if("dangerouslySetInnerHTML"!==n){if(o)n=n.replace(/xlink[H:h]/,"h").replace(/sName$/,"s");else if("href"!==n&&"list"!==n&&"form"!==n&&"tabIndex"!==n&&"download"!==n&&n in e)try{e[n]=null==_?"":_;break e}catch(e){}"function"==typeof _||(null!=_&&(!1!==_||"a"===n[0]&&"r"===n[1])?e.setAttribute(n,_):e.removeAttribute(n))}}function E(e){this.l[e.type+!1](n.event?n.event(e):e)}function S(e){this.l[e.type+!0](n.event?n.event(e):e)}function P(e,_,t,o,r,u,l,i,c){var f,a,p,v,y,m,g,b,C,x,H,E=_.type;if(void 0!==_.constructor)return null;null!=t.__h&&(c=t.__h,i=_.__e=t.__e,_.__h=null,u=[i]),(f=n.__b)&&f(_);try{e:if("function"==typeof E){if(b=_.props,C=(f=E.contextType)&&o[f.__c],x=f?C?C.props.value:f.__:o,t.__c?g=(a=_.__c=t.__c).__=a.__E:("prototype"in E&&E.prototype.render?_.__c=a=new E(b,x):(_.__c=a=new d(b,x),a.constructor=E,a.render=A),C&&C.sub(a),a.props=b,a.state||(a.state={}),a.context=x,a.__n=o,p=a.__d=!0,a.__h=[]),null==a.__s&&(a.__s=a.state),null!=E.getDerivedStateFromProps&&(a.__s==a.state&&(a.__s=s({},a.__s)),s(a.__s,E.getDerivedStateFromProps(b,a.__s))),v=a.props,y=a.state,p)null==E.getDerivedStateFromProps&&null!=a.componentWillMount&&a.componentWillMount(),null!=a.componentDidMount&&a.__h.push(a.componentDidMount);else{if(null==E.getDerivedStateFromProps&&b!==v&&null!=a.componentWillReceiveProps&&a.componentWillReceiveProps(b,x),!a.__e&&null!=a.shouldComponentUpdate&&!1===a.shouldComponentUpdate(b,a.__s,x)||_.__v===t.__v){a.props=b,a.state=a.__s,_.__v!==t.__v&&(a.__d=!1),a.__v=_,_.__e=t.__e,_.__k=t.__k,_.__k.forEach(function(e){e&&(e.__=_)}),a.__h.length&&l.push(a);break e}null!=a.componentWillUpdate&&a.componentWillUpdate(b,a.__s,x),null!=a.componentDidUpdate&&a.__h.push(function(){a.componentDidUpdate(v,y,m)})}a.context=x,a.props=b,a.state=a.__s,(f=n.__r)&&f(_),a.__d=!1,a.__v=_,a.__P=e,f=a.render(a.props,a.state,a.context),a.state=a.__s,null!=a.getChildContext&&(o=s(s({},o),a.getChildContext())),p||null==a.getSnapshotBeforeUpdate||(m=a.getSnapshotBeforeUpdate(v,y)),H=null!=f&&f.type===h&&null==f.key?f.props.children:f,k(e,Array.isArray(H)?H:[H],_,t,o,r,u,l,i,c),a.base=_.__e,_.__h=null,a.__h.length&&l.push(a),g&&(a.__E=a.__=null),a.__e=!1}else null==u&&_.__v===t.__v?(_.__k=t.__k,_.__e=t.__e):_.__e=w(t.__e,_,t,o,r,u,l,c);(f=n.diffed)&&f(_)}catch(e){_.__v=null,(c||null!=u)&&(_.__e=i,_.__h=!!c,u[u.indexOf(i)]=null),n.__e(e,_,t)}}function D(e,_){n.__c&&n.__c(_,e),e.some(function(_){try{e=_.__h,_.__h=[],e.some(function(e){e.call(_)})}catch(e){n.__e(e,_.__v)}})}function w(n,_,t,o,r,u,i,c){var s,a,p,h=t.props,d=_.props,y=_.type,m=0;if("svg"===y&&(r=!0),null!=u)for(;m<u.length;m++)if((s=u[m])&&(s===n||(y?s.localName==y:3==s.nodeType))){n=s,u[m]=null;break}if(null==n){if(null===y)return document.createTextNode(d);n=r?document.createElementNS("http://www.w3.org/2000/svg",y):document.createElement(y,d.is&&d),u=null,c=!1}if(null===y)h===d||c&&n.data===d||(n.data=d);else{if(u=u&&e.call(n.childNodes),a=(h=t.props||l).dangerouslySetInnerHTML,p=d.dangerouslySetInnerHTML,!c){if(null!=u)for(h={},m=0;m<n.attributes.length;m++)h[n.attributes[m].name]=n.attributes[m].value;(p||a)&&(p&&(a&&p.__html==a.__html||p.__html===n.innerHTML)||(n.innerHTML=p&&p.__html||""))}if(function(e,n,_,t,o){var r;for(r in _)"children"===r||"key"===r||r in n||H(e,r,null,_[r],t);for(r in n)o&&"function"!=typeof n[r]||"children"===r||"key"===r||"value"===r||"checked"===r||_[r]===n[r]||H(e,r,n[r],_[r],t)}(n,d,h,r,c),p)_.__k=[];else if(m=_.props.children,k(n,Array.isArray(m)?m:[m],_,t,o,r&&"foreignObject"!==y,u,i,u?u[0]:t.__k&&v(t,0),c),null!=u)for(m=u.length;m--;)null!=u[m]&&f(u[m]);c||("value"in d&&void 0!==(m=d.value)&&(m!==n.value||"progress"===y&&!m)&&H(n,"value",m,h.value,!1),"checked"in d&&void 0!==(m=d.checked)&&m!==n.checked&&H(n,"checked",m,h.checked,!1))}return n}function T(e,_,t){try{"function"==typeof e?e(_):e.current=_}catch(e){n.__e(e,t)}}function U(e,_,t){var o,r;if(n.unmount&&n.unmount(e),(o=e.ref)&&(o.current&&o.current!==e.__e||T(o,null,_)),null!=(o=e.__c)){if(o.componentWillUnmount)try{o.componentWillUnmount()}catch(e){n.__e(e,_)}o.base=o.__P=null}if(o=e.__k)for(r=0;r<o.length;r++)o[r]&&U(o[r],_,"function"!=typeof e.type);t||null==e.__e||f(e.__e),e.__e=e.__d=void 0}function A(e,n,_){return this.constructor(e,_)}function M(_,t,o){var r,u,i;n.__&&n.__(_,t),u=(r="function"==typeof o)?null:o&&o.__k||t.__k,i=[],P(t,_=(!r&&o||t).__k=a(h,null,[_]),u||l,l,void 0!==t.ownerSVGElement,!r&&o?[o]:u?null:t.firstChild?e.call(t.childNodes):null,i,!r&&o?o:u?u.__e:t.firstChild,r),D(i,_)}function F(e,n){var _={__c:n="__cC"+u++,__:e,Consumer:function(e,n){return e.children(n)},Provider:function(e){var _,t;return this.getChildContext||(_=[],(t={})[n]=this,this.getChildContext=function(){return t},this.shouldComponentUpdate=function(e){this.props.value!==e.value&&_.some(m)},this.sub=function(e){_.push(e);var n=e.componentWillUnmount;e.componentWillUnmount=function(){_.splice(_.indexOf(e),1),n&&n.call(e)}}),e.children}};return _.Provider.__=_.Consumer.contextType=_}e=i.slice,n={__e:function(e,n){for(var _,t,o;n=n.__;)if((_=n.__c)&&!_.__)try{if((t=_.constructor)&&null!=t.getDerivedStateFromError&&(_.setState(t.getDerivedStateFromError(e)),o=_.__d),null!=_.componentDidCatch&&(_.componentDidCatch(e),o=_.__d),o)return _.__E=_}catch(n){e=n}throw e}},_=0,d.prototype.setState=function(e,n){var _;_=null!=this.__s&&this.__s!==this.state?this.__s:this.__s=s({},this.state),"function"==typeof e&&(e=e(s({},_),this.props)),e&&s(_,e),null!=e&&this.__v&&(n&&this.__h.push(n),m(this))},d.prototype.forceUpdate=function(e){this.__v&&(this.__e=!0,e&&this.__h.push(e),m(this))},d.prototype.render=h,t=[],o="function"==typeof Promise?Promise.prototype.then.bind(Promise.resolve()):setTimeout,g.__r=0,u=0;var L,N,W,R=0,I=[],O=n.__b,V=n.__r,q=n.diffed,B=n.__c,$=n.unmount;function j(e,_){n.__h&&n.__h(N,e,R||_),R=0;var t=N.__H||(N.__H={__:[],__h:[]});return e>=t.__.length&&t.__.push({}),t.__[e]}function G(e){return R=1,z(ie,e)}function z(e,n,_){var t=j(L++,2);return t.t=e,t.__c||(t.__=[_?_(n):ie(void 0,n),function(e){var n=t.t(t.__[0],e);t.__[0]!==n&&(t.__=[n,t.__[1]],t.__c.setState({}))}],t.__c=N),t.__}function J(e,_){var t=j(L++,3);!n.__s&&le(t.__H,_)&&(t.__=e,t.__H=_,N.__H.__h.push(t))}function K(e,_){var t=j(L++,4);!n.__s&&le(t.__H,_)&&(t.__=e,t.__H=_,N.__h.push(t))}function Q(e){return R=5,Y(function(){return{current:e}},[])}function X(e,n,_){R=6,K(function(){"function"==typeof e?e(n()):e&&(e.current=n())},null==_?_:_.concat(e))}function Y(e,n){var _=j(L++,7);return le(_.__H,n)&&(_.__=e(),_.__H=n,_.__h=e),_.__}function Z(e,n){return R=8,Y(function(){return e},n)}function ee(e){var n=N.context[e.__c],_=j(L++,9);return _.c=e,n?(null==_.__&&(_.__=!0,n.sub(N)),n.props.value):e.__}function ne(e,_){n.useDebugValue&&n.useDebugValue(_?_(e):e)}function _e(e){var n=j(L++,10),_=G();return n.__=e,N.componentDidCatch||(N.componentDidCatch=function(e){n.__&&n.__(e),_[1](e)}),[_[0],function(){_[1](void 0)}]}function te(){I.forEach(function(e){if(e.__P)try{e.__H.__h.forEach(re),e.__H.__h.forEach(ue),e.__H.__h=[]}catch(_){e.__H.__h=[],n.__e(_,e.__v)}}),I=[]}n.__b=function(e){N=null,O&&O(e)},n.__r=function(e){V&&V(e),L=0;var n=(N=e.__c).__H;n&&(n.__h.forEach(re),n.__h.forEach(ue),n.__h=[])},n.diffed=function(e){q&&q(e);var _=e.__c;_&&_.__H&&_.__H.__h.length&&(1!==I.push(_)&&W===n.requestAnimationFrame||((W=n.requestAnimationFrame)||function(e){var n,_=function(){clearTimeout(t),oe&&cancelAnimationFrame(n),setTimeout(e)},t=setTimeout(_,100);oe&&(n=requestAnimationFrame(_))})(te)),N=void 0},n.__c=function(e,_){_.some(function(e){try{e.__h.forEach(re),e.__h=e.__h.filter(function(e){return!e.__||ue(e)})}catch(t){_.some(function(e){e.__h&&(e.__h=[])}),_=[],n.__e(t,e.__v)}}),B&&B(e,_)},n.unmount=function(e){$&&$(e);var _=e.__c;if(_&&_.__H)try{_.__H.__.forEach(re)}catch(e){n.__e(e,_.__v)}};var oe="function"==typeof requestAnimationFrame;function re(e){var n=N;"function"==typeof e.__c&&e.__c(),N=n}function ue(e){var n=N;e.__c=e.__(),N=n}function le(e,n){return!e||e.length!==n.length||n.some(function(n,_){return n!==e[_]})}function ie(e,n){return"function"==typeof n?n(e):n}var ce=function(e,n,_,t){var o;n[0]=0;for(var r=1;r<n.length;r++){var u=n[r++],l=n[r]?(n[0]|=u?1:2,_[n[r++]]):n[++r];3===u?t[0]=l:4===u?t[1]=Object.assign(t[1]||{},l):5===u?(t[1]=t[1]||{})[n[++r]]=l:6===u?t[1][n[++r]]+=l+"":u?(o=e.apply(l,ce(e,l,_,["",null])),t.push(o),l[0]?n[0]|=2:(n[r-2]=0,n[r]=o)):t.push(l)}return t},se=new Map,fe=function(e){var n=se.get(this);return n||(n=new Map,se.set(this,n)),(n=ce(this,n.get(e)||(n.set(e,n=function(e){for(var n,_,t=1,o="",r="",u=[0],l=function(e){1===t&&(e||(o=o.replace(/^\s*\n\s*|\s*\n\s*$/g,"")))?u.push(0,e,o):3===t&&(e||o)?(u.push(3,e,o),t=2):2===t&&"..."===o&&e?u.push(4,e,0):2===t&&o&&!e?u.push(5,0,!0,o):t>=5&&((o||!e&&5===t)&&(u.push(t,0,o,_),t=6),e&&(u.push(t,e,0,_),t=6)),o=""},i=0;i<e.length;i++){i&&(1===t&&l(),l(i));for(var c=0;c<e[i].length;c++)n=e[i][c],1===t?"<"===n?(l(),u=[u],t=3):o+=n:4===t?"--"===o&&">"===n?(t=1,o=""):o=n+o[0]:r?n===r?r="":o+=n:'"'===n||"'"===n?r=n:">"===n?(l(),t=1):t&&("="===n?(t=5,_=o,o=""):"/"===n&&(t<5||">"===e[i][c+1])?(l(),3===t&&(u=u[0]),t=u,(u=u[0]).push(2,0,t),t=0):" "===n||"\t"===n||"\n"===n||"\r"===n?(l(),t=2):o+=n),3===t&&"!--"===o&&(t=4,u=u[0])}return l(),u}(e)),n),arguments,[])).length>1?n:n[0]}.bind(a);const __L={html:fe,render:M,Component:d};
+{
+const DCLogic = class extends __L.Component { render() { return view(this.renderVals()); } };
+
+const FILES = [
+  { id: 'inv', mark: 'IN', name: 'Purchase invoices', file: 'invoices_sep.zip', meta: '42 PDFs' },
+  { id: 'bank', mark: 'BK', name: 'Bank statement', file: 'hdfc_sep.csv', meta: '318 rows' },
+  { id: 'tally', mark: 'TL', name: 'Tally day book', file: 'daybook_sep.xml', meta: '1,204 vouchers' },
+  { id: 'ims', mark: 'IM', name: 'IMS feed', file: 'ims_sep.json', meta: '42 records' },
+  { id: 'ewb', mark: 'EW', name: 'E-way bills', file: 'ewb_sep.json', meta: '39 bills' }
+];
+const NAMES = { inv: 'invoices', bank: 'bank', tally: 'Tally', ims: 'IMS', ewb: 'e-way bills' };
+const STEPS = [
+  { tag: 'vision', label: 'Vision extraction', needs: ['inv'], logs: ['reading 42 invoice PDFs', 'GSTIN, HSN, taxable value, tax pulled per line', '3 handwritten totals re-read at higher resolution'] },
+  { tag: 'gstin', label: 'GSTIN checks', needs: ['inv'], logs: ['19 supplier GSTINs validated', 'CANCELLED 09AAJFM5521C1ZK Mehta Paints (12 Aug)'] },
+  { tag: 'norm', label: 'Normalising', needs: ['inv', 'tally'], logs: ['"SHREE BALAJI STEELS" = "Shree Balaji Steel"', 'dates, rounding and ledger names aligned', 'INV-0926 looks like INV-0921: same value, same day'] },
+  { tag: 'road', label: 'Road linking', needs: ['inv', 'ewb'], logs: ['39 e-way bills tied to invoices', 'INV-0917 has no e-way bill', 'INV-0940 dispatched 14 Sep, no goods receipt'] },
+  { tag: 'match', label: 'Matching', needs: ['inv', 'ims'], logs: ['invoices x IMS x Tally x bank', 'bank: 2,40,000 to Gupta Traders, no invoice', 'done'] }
+];
+const FLAGS = [
+  { tag: 'Goods', needs: ['inv', 'ewb'], inv: true, tax: 28068, trace: 'INV-0917', title: 'INV-0917 · Shree Balaji Steel · ₹1,84,000', body: 'Billed and paid, but no e-way bill. Did the steel ever move?' },
+  { tag: 'GSTIN', needs: ['inv'], inv: true, tax: 6930, title: 'INV-0951 · Mehta Paints', body: 'Supplier GSTIN was cancelled on 12 Aug. Credit is not claimable.' },
+  { tag: 'Dupe', needs: ['inv', 'tally'], inv: true, tax: 9504, title: 'INV-0926 · Kapoor Fasteners', body: 'Same value and date as INV-0921. Likely booked twice.' },
+  { tag: 'Goods', needs: ['ewb', 'tally'], inv: true, tax: 14220, trace: 'INV-0940', title: 'INV-0940 · Delhi Hardware Mart', body: 'Left the supplier on 14 Sep. Never received in Tally.' },
+  { tag: 'Bank', needs: ['bank', 'tally'], inv: false, tax: 0, title: '₹2,40,000 to Gupta Traders', body: 'Money went out with no invoice or voucher behind it.' }
+];
+const ST_LABELS = ['Invoice', 'E-way bill', 'On the road', 'Received in Tally', 'Paid'];
+const TRACES = {
+  'INV-0904': { supplier: 'Jain Pipes', amount: '₹1,41,600', gstin: '07AABFJ2210K1Z3', ok: [1, 1, 1, 1, 1],
+    detail: ['03 Sep · ₹1,41,600', 'EWB 3410 2287 9915', 'DL1LAB4417 · 04 Sep', 'GRN 1182 · 05 Sep', 'HDFC NEFT · 18 Sep'],
+    badge: 'CLEAN TRAIL', verdict: 'Every link holds, from the invoice to the payment. The ₹21,600 credit is safe to claim.' },
+  'INV-0917': { supplier: 'Shree Balaji Steel', amount: '₹1,84,000', gstin: '06AAPFS7781L1ZQ', ok: [1, 0, 0, 1, 1],
+    detail: ['09 Sep · ₹1,84,000', 'None generated', 'No vehicle on record', 'Voucher 1203 · 10 Sep', 'HDFC RTGS · 12 Sep'],
+    badge: 'TRAIL BROKEN', verdict: 'Paid in full for steel with no record of it moving. Hold ₹28,068 of ITC until the supplier produces the e-way bill.' },
+  'INV-0940': { supplier: 'Delhi Hardware Mart', amount: '₹93,220', gstin: '07AAECD9032H1Z8', ok: [1, 1, 1, 0, 0],
+    detail: ['11 Sep · ₹93,220', 'EWB 3411 0062 4471', 'HR55AK2093 · 14 Sep', 'No goods receipt', 'Not yet paid'],
+    badge: 'TRAIL BROKEN', verdict: 'Dispatched on 14 Sep and never seen in the books. Check the godown before claiming ₹14,220.' }
+};
+const IMS = [
+  { id: 'INV-0904', supplier: 'Jain Pipes', gstin: '07AABFJ2210K1Z3', tax: 21600, suggest: 'accept', why: 'Matches Tally, e-way bill and bank.' },
+  { id: 'INV-0917', supplier: 'Shree Balaji Steel', gstin: '06AAPFS7781L1ZQ', tax: 28068, suggest: 'pending', why: 'No e-way bill. Hold until the goods are traced.' },
+  { id: 'INV-0926', supplier: 'Kapoor Fasteners', gstin: '07AAGCK4410P1ZD', tax: 9504, suggest: 'reject', why: 'Duplicate of INV-0921.' },
+  { id: 'INV-0940', supplier: 'Delhi Hardware Mart', gstin: '07AAECD9032H1Z8', tax: 14220, suggest: 'pending', why: 'Dispatched, not received in Tally.' },
+  { id: 'INV-0951', supplier: 'Mehta Paints', gstin: '09AAJFM5521C1ZK', tax: 6930, suggest: 'reject', why: 'Supplier GSTIN cancelled 12 Aug.' }
+];
+const MODULES = [
+  ['A', 'Upload', '', 'Five sources in one drop: invoices, bank, Tally day book, IMS feed, e-way bills.'],
+  ['B', 'Matching', '', 'Every invoice lined up against Tally, IMS and the bank statement.'],
+  ['C', 'Overview', '', 'The month on one screen: what is clean, what is fishy, what is due.'],
+  ['D', 'Discrepancies', '', 'Each mismatch with its reason and the next step to fix it.'],
+  ['E', 'Follow the Goods', ' ★', 'Traces a purchase from invoice to e-way bill to road to godown.'],
+  ['F', 'Follow the Credit', ' ★', 'Separates input tax credit that is safe to claim from credit at risk.'],
+  ['G', 'IMS Autopilot', '', 'Accept, reject or hold every IMS record, with the reason written down.'],
+  ['H', 'Liability', '', 'What you owe after credit, ahead of the GSTR-3B deadline.'],
+  ['I', 'Copilot', '', 'Ask anything about the month in plain language.']
+];
+const DEADLINE = new Date('2026-10-14T00:00:00+05:30').getTime();
+const inr = (n) => '₹' + Math.round(n).toLocaleString('en-IN');
+const pad = (n) => String(n).padStart(2, '0');
+const FONTS = {
+  'Anton + Space Grotesk': { d: 'Anton, sans-serif', w: '400', s: '100%', l: '0em', t: 'uppercase', b: "'Space Grotesk', system-ui, sans-serif", m: "'JetBrains Mono', monospace" },
+  'Bricolage + Geist': { d: "'Bricolage Grotesque', sans-serif", w: '800', s: '100%', l: '-0.04em', t: 'none', b: 'Geist, system-ui, sans-serif', m: "'Geist Mono', monospace" },
+  'Instrument Serif + Geist': { d: "'Instrument Serif', serif", w: '400', s: '100%', l: '-0.02em', t: 'none', b: 'Geist, system-ui, sans-serif', m: "'Geist Mono', monospace" },
+  'Archivo Expanded + Plex': { d: 'Archivo, sans-serif', w: '800', s: '125%', l: '-0.02em', t: 'uppercase', b: "'IBM Plex Sans', system-ui, sans-serif", m: "'IBM Plex Mono', monospace" }
+};
+const TICKER = [
+  ['[vision]', '42 invoice PDFs read'], ['[gstin]', '09AAJFM5521C1ZK cancelled 12 Aug'], ['[road]', 'INV-0917 has no e-way bill'],
+  ['[norm]', '"SHREE BALAJI STEELS" = "Shree Balaji Steel"'], ['[match]', '38 of 42 invoices matched'], ['[dupe]', 'INV-0926 looks like INV-0921'],
+  ['[bank]', '₹2,40,000 to Gupta Traders, no invoice'], ['[road]', 'HR55AK2093 dispatched 14 Sep, no goods receipt'], ['[ims]', '5 records need a call before the 14th']
+];
+const PILES = ['INVOICES', 'BANK', 'TALLY', 'IMS', 'E-WAY', 'FISHY'];
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { dropped: {}, phase: 'idle', tick: 0, ran: {}, trace: 'INV-0917', ims: {}, auto: false, now: Date.now(), sorted: false };
+    this.script = [];
+    this.mx = this.my = -9999; this.mvx = this.mvy = 0;
+    this.dmx = this.dmy = -9999;
+    this.sorted = false; this.sortAmt = 0;
+    this.initSlips();
+    this.loop = this.loop.bind(this);
+  }
+  componentDidMount() {
+    this.clock = setInterval(() => this.setState({ now: Date.now() }), 1000);
+    try { this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { this.reduced = false; }
+    this.attachMotion(0);
+  }
+  componentWillUnmount() {
+    clearInterval(this.clock);
+    clearInterval(this.timer);
+    clearTimeout(this.retry);
+    cancelAnimationFrame(this.raf);
+    if (this.ro) this.ro.disconnect();
+    (this.offs || []).forEach((off) => off());
+  }
+
+  // ---------- motion ----------
+  initSlips() {
+    let seed = 11;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const s = [];
+    for (let i = 0; i < 150; i++) {
+      const w = 20 + rnd() * 14;
+      s.push({
+        kind: i % 5, fishy: i % 17 === 3, nx: rnd(), ny: rnd(), x: 0, y: 0, vx: 0, vy: 0,
+        a: rnd() * 6.28, va: 0, va0: (rnd() - 0.5) * 0.012, ph: rnd() * 6.28, fs: 0.5 + rnd() * 1.3,
+        w, h: w * 1.32, z: 0.55 + rnd() * 0.75, jx: (rnd() - 0.5) * 6, ja: (rnd() - 0.5) * 0.09,
+        lines: 2 + Math.floor(rnd() * 3), kick: 0, tx: 0, ty: 0
+      });
+    }
+    s.sort((a, b) => a.z - b.z);
+    this.slips = s;
+    this.placed = false;
+  }
+  attachMotion(n) {
+    const hero = document.getElementById('top');
+    const field = document.getElementById('hc-field');
+    const goods = document.getElementById('goods');
+    const dots = document.getElementById('hc-dots');
+    if (!hero || !field || !goods || !dots) {
+      if (n < 40) this.retry = setTimeout(() => this.attachMotion(n + 1), 100);
+      return;
+    }
+    this.canvas = field; this.ctx = field.getContext('2d');
+    this.dcanvas = dots; this.dctx = dots.getContext('2d');
+    const on = (el, ev, fn) => { el.addEventListener(ev, fn); (this.offs = this.offs || []).push(() => el.removeEventListener(ev, fn)); };
+    const local = (el, e, W) => { const r = el.getBoundingClientRect(); const k = W / (r.width || 1); return [(e.clientX - r.left) * k, (e.clientY - r.top) * k]; };
+    on(hero, 'pointermove', (e) => {
+      const [x, y] = local(field, e, this.W);
+      if (this.mx > -9000) { this.mvx = this.mvx * 0.5 + (x - this.mx) * 0.5; this.mvy = this.mvy * 0.5 + (y - this.my) * 0.5; }
+      this.mx = x; this.my = y;
+    });
+    on(hero, 'pointerleave', () => { this.mx = this.my = -9999; });
+    on(hero, 'pointerdown', (e) => {
+      if (e.target.closest && e.target.closest('button,a')) return;
+      const [x, y] = local(field, e, this.W);
+      this.slips.forEach((s) => {
+        const dx = s.x - x, dy = s.y - y, d = Math.hypot(dx, dy) || 1;
+        if (d < 280) { const f = 1 - d / 280; s.vx += dx / d * f * 16; s.vy += dy / d * f * 16; s.va += (Math.random() - 0.5) * f * 0.4; s.kick = 1; }
+      });
+    });
+    on(goods, 'pointermove', (e) => { const [x, y] = local(dots, e, this.dW); this.dmx = x; this.dmy = y; });
+    on(goods, 'pointerleave', () => { this.dmx = this.dmy = -9999; });
+    this.ro = new ResizeObserver(() => this.resize());
+    this.ro.observe(field); this.ro.observe(dots);
+    this.resize();
+    this.raf = requestAnimationFrame(this.loop);
+  }
+  fit(c, ctx) {
+    const W = c.clientWidth, H = c.clientHeight, dpr = Math.min(2, window.devicePixelRatio || 1);
+    c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [W, H];
+  }
+  resize() {
+    [this.W, this.H] = this.fit(this.canvas, this.ctx);
+    [this.dW, this.dH] = this.fit(this.dcanvas, this.dctx);
+    if (!this.placed && this.W) { this.slips.forEach((s) => { s.x = s.nx * this.W; s.y = s.ny * this.H; }); this.placed = true; }
+    this.layoutPiles();
+  }
+  layoutPiles() {
+    const W = this.W, H = this.H, wide = W >= 900;
+    const x0 = wide ? W * 0.57 : 24, x1 = wide ? W - 56 : W - 24, base = wide ? H * 0.64 : H - 120;
+    const cw = (x1 - x0) / 6, counts = [0, 0, 0, 0, 0, 0];
+    this.slips.forEach((s) => {
+      const b = s.fishy ? 5 : s.kind, k = counts[b]++;
+      s.tx = x0 + cw * (b + 0.5) + s.jx; s.ty = base - k * 3.4; s.ta = s.ja;
+    });
+    this.piles = { x0, x1, base, cw, counts, wide };
+  }
+  inView(el) { const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < (window.innerHeight || 900); }
+  loop(t) {
+    this.raf = requestAnimationFrame(this.loop);
+    if (this.W && this.inView(this.canvas)) { this.step(t); this.drawField(t); }
+    if (this.dW && this.inView(this.dcanvas)) this.drawDots(t);
+    this.mvx *= 0.86; this.mvy *= 0.86;
+  }
+  step(t) {
+    const W = this.W, H = this.H, sorted = this.sorted, calm = this.reduced, R = 150;
+    this.sortAmt += ((sorted ? 1 : 0) - this.sortAmt) * 0.06;
+    for (const s of this.slips) {
+      if (sorted) {
+        s.vx += (s.tx - s.x) * 0.014; s.vy += (s.ty - s.y) * 0.014; s.vx *= 0.84; s.vy *= 0.84;
+        const da = Math.atan2(Math.sin(s.ta - s.a), Math.cos(s.ta - s.a)); s.va = s.va * 0.6 + da * 0.06;
+      } else if (calm) {
+        s.vx *= 0.94; s.vy *= 0.94; s.va *= 0.94;
+      } else {
+        const bx = Math.sin(t * 0.0004 + s.ph) * 0.35 * s.z, by = -0.28 * s.z;
+        s.vx += (bx - s.vx) * 0.02; s.vy += (by - s.vy) * 0.02; s.va += (s.va0 - s.va) * 0.02;
+      }
+      const dx = s.x - this.mx, dy = s.y - this.my, d = Math.hypot(dx, dy);
+      if (d < R && d > 0.1) {
+        const f = 1 - d / R;
+        s.vx += dx / d * f * 1.4 + this.mvx * f * 0.22; s.vy += dy / d * f * 1.4 + this.mvy * f * 0.22;
+        s.va += (dx > 0 ? 1 : -1) * f * 0.01; s.kick = Math.min(1, s.kick + f * 0.25);
+      }
+      const sp = Math.hypot(s.vx, s.vy); if (sp > 22) { s.vx *= 22 / sp; s.vy *= 22 / sp; }
+      s.kick *= 0.96; s.x += s.vx; s.y += s.vy; s.a += s.va;
+      if (!sorted) {
+        if (s.y < -70) { s.y = H + 60; s.x = Math.random() * W; }
+        else if (s.y > H + 80) s.y = -60;
+        if (s.x < -70) s.x = W + 60; else if (s.x > W + 70) s.x = -60;
+      }
+    }
+  }
+  drawField(t) {
+    const c = this.ctx, amt = this.sortAmt, acc = this.accent || '#FF7A1A';
+    c.clearRect(0, 0, this.W, this.H);
+    for (const s of this.slips) {
+      const fl = this.reduced ? 1 : Math.cos(t * 0.0018 * s.fs * (1 + s.kick * 3) + s.ph);
+      let sx = fl + (1 - fl) * amt; if (Math.abs(sx) < 0.1) sx = sx < 0 ? -0.1 : 0.1;
+      const sc = s.z + (1 - s.z) * amt, w = s.w, h = s.h, back = sx < 0;
+      c.save(); c.translate(s.x, s.y); c.rotate(s.a); c.scale(sx * sc, sc);
+      c.fillStyle = s.fishy && amt > 0.5 ? acc : back ? '#f1d9c3' : '#fff8f0';
+      c.fillRect(-w / 2, -h / 2, w, h);
+      c.lineWidth = 1.1 / sc; c.strokeStyle = '#1c130c'; c.strokeRect(-w / 2, -h / 2, w, h);
+      if (!back) {
+        c.fillStyle = '#1c130c'; c.fillRect(-w / 2 + 4, -h / 2 + 4, w * (0.25 + s.kind * 0.06), 3);
+        c.fillStyle = 'rgba(28,19,12,.35)';
+        for (let j = 0; j < s.lines; j++) c.fillRect(-w / 2 + 4, -h / 2 + 12 + j * 5, (w - 8) * (j % 2 ? 0.55 : 0.85), 1.4);
+      }
+      c.restore();
+    }
+    if (amt > 0.02 && this.piles) {
+      const p = this.piles;
+      c.globalAlpha = amt; c.fillStyle = '#1c130c';
+      c.fillRect(p.x0, p.base + 34, p.x1 - p.x0, 1.5);
+      c.font = '600 11px ' + (this.mono || 'monospace'); c.textAlign = 'center';
+      PILES.forEach((label, b) => {
+        const x = p.x0 + p.cw * (b + 0.5);
+        if (b === 5) { c.fillStyle = acc; c.fillRect(x - 30, p.base + 44, 60, 34); c.fillStyle = '#1c130c'; }
+        c.fillText(label, x, p.base + 58); c.fillText(String(p.counts[b]), x, p.base + 72);
+      });
+      c.globalAlpha = 1;
+    }
+  }
+  drawDots(t) {
+    const c = this.dctx, W = this.dW, H = this.dH, g = 30, acc = this.accent || '#FF7A1A', calm = this.reduced;
+    c.clearRect(0, 0, W, H);
+    for (let x = g / 2; x < W; x += g) {
+      for (let y = g / 2; y < H; y += g) {
+        const dx = x - this.dmx, dy = y - this.dmy, d = Math.hypot(dx, dy) || 1, f = Math.max(0, 1 - d / 220);
+        const wv = calm ? 0.5 : Math.sin(t * 0.0012 + x * 0.012 + y * 0.008) * 0.5 + 0.5;
+        const r = 0.9 + wv * 0.9 + f * 4.5;
+        if (f > 0.04) { c.globalAlpha = Math.min(1, 0.25 + f); c.fillStyle = acc; }
+        else { c.globalAlpha = 0.1 + wv * 0.12; c.fillStyle = '#fff0e1'; }
+        c.beginPath(); c.arc(x + dx / d * f * 12, y + dy / d * f * 12, r, 0, 6.2832); c.fill();
+      }
+    }
+    c.globalAlpha = 1;
+  }
+  toggleSort() {
+    this.sorted = !this.sorted;
+    if (this.sorted) this.layoutPiles();
+    else this.slips.forEach((s) => { s.vx += (Math.random() - 0.5) * 14; s.vy += -Math.random() * 10; s.va += (Math.random() - 0.5) * 0.3; s.kick = 1; });
+    this.setState({ sorted: this.sorted });
+  }
+  delay() {
+    const s = this.props.speed ?? 'normal';
+    return s === 'slow' ? 700 : s === 'fast' ? 180 : 380;
+  }
+  buildScript(d) {
+    const out = [];
+    STEPS.forEach((s, i) => {
+      const missing = s.needs.filter((n) => !d[n]);
+      if (missing.length) out.push({ step: i, skip: true, text: 'skipped, needs ' + missing.map((n) => NAMES[n]).join(' + ') });
+      else s.logs.forEach((t) => out.push({ step: i, skip: false, text: t }));
+    });
+    return out;
+  }
+  run() {
+    const d = this.state.dropped;
+    if (Object.values(d).filter(Boolean).length < 2 || this.state.phase === 'running') return;
+    clearInterval(this.timer);
+    this.script = this.buildScript(d);
+    this.startedAt = Date.now();
+    this.setState({ phase: 'running', tick: 0, ran: { ...d } });
+    this.timer = setInterval(() => {
+      const next = this.state.tick + 1;
+      if (next >= this.script.length) {
+        clearInterval(this.timer);
+        this.doneIn = ((Date.now() - this.startedAt) / 1000).toFixed(1);
+        this.setState({ tick: this.script.length, phase: 'done' });
+      } else this.setState({ tick: next });
+    }, this.delay());
+  }
+  scrollTo(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#FF7A1A';
+    const font = FONTS[this.props.fonts] || FONTS['Anton + Space Grotesk'];
+    this.accent = accent; this.mono = font.m;
+    const { dropped: d, phase, tick, ran, trace, ims, auto, now } = this.state;
+    const busy = phase === 'running';
+    const loadedCount = FILES.filter((f) => d[f.id]).length;
+
+    const files = FILES.map((f) => ({
+      ...f,
+      cls: 'chip' + (d[f.id] ? ' on' : ''),
+      pressed: d[f.id] ? 'true' : 'false',
+      status: d[f.id] ? 'LOADED' : 'DROP',
+      toggle: () => this.setState({ dropped: { ...d, [f.id]: !d[f.id] }, phase: 'idle', tick: 0 })
+    }));
+
+    const cur = phase === 'running' ? (this.script[tick] || {}).step : -1;
+    const steps = STEPS.map((s, i) => {
+      const entries = this.script.filter((e) => e.step === i);
+      const skipped = entries.length && entries[0].skip;
+      let st = 'QUEUED', cls = 'step todo';
+      if (phase === 'done' || (phase === 'running' && i < cur)) { st = skipped ? 'SKIPPED' : 'DONE'; cls = skipped ? 'step skipped' : 'step done'; }
+      else if (phase === 'running' && i === cur) { st = skipped ? 'SKIPPED' : 'RUNNING'; cls = skipped ? 'step skipped' : 'step active'; }
+      return { label: s.label, st, cls };
+    });
+
+    const shown = phase === 'idle' ? [] : this.script.slice(0, tick + (phase === 'running' ? 1 : 0));
+    const logs = (shown.length ? shown : [{ step: -1, text: loadedCount ? 'sources staged, press reconcile' : 'waiting for files', skip: true }])
+      .slice(-8)
+      .map((e) => ({ tag: e.step >= 0 ? '[' + STEPS[e.step].tag + ']' : '[idle]', text: e.text, cls: 'log' + (e.skip ? ' skip' : '') }));
+
+    const elapsed = phase === 'done' ? 'done in ' + this.doneIn + 's' : phase === 'running' ? 'running' : 'ready';
+
+    const flagsAll = FLAGS.filter((g) => g.needs.every((n) => ran[n]));
+    const flags = flagsAll.map((g) => ({
+      ...g,
+      open: () => {
+        if (g.trace) { this.setState({ trace: g.trace }); this.scrollTo('goods'); }
+        else this.scrollTo('credit');
+      }
+    }));
+    const invFlags = flagsAll.filter((g) => g.inv);
+    const missingAll = FILES.filter((f) => !ran[f.id]).map((f) => NAMES[f.id]);
+
+    let hint = 'Click sources to drop them in. You need at least two.';
+    if (loadedCount >= 2 && phase === 'idle') hint = loadedCount === 5 ? 'All five in. Run it.' : 'Fewer sources means fewer checks. Try leaving out e-way bills.';
+    if (phase === 'done') hint = 'Click a fishy item to follow it.';
+
+    const remain = Math.max(0, DEADLINE - now);
+    const cd = { d: Math.floor(remain / 864e5), h: pad(Math.floor(remain / 36e5) % 24), m: pad(Math.floor(remain / 6e4) % 60), s: pad(Math.floor(remain / 1e3) % 60) };
+
+    const t = TRACES[trace];
+    const stations = ST_LABELS.map((label, i) => {
+      const ok = t.ok[i];
+      const link = (a, b) => (a < 0 || b > 4 ? 'seg none' : t.ok[a] && t.ok[b] ? 'seg live' : 'seg broken');
+      return {
+        label, num: '0' + (i + 1), detail: t.detail[i], mark: ok ? 'OK' : '?',
+        nodeCls: 'node ' + (ok ? 'ok' : 'miss'), detCls: 'sdet' + (ok ? '' : ' miss'),
+        segL: link(i - 1, i), segR: link(i, i + 1)
+      };
+    });
+    const traceTabs = Object.keys(TRACES).map((id) => ({
+      id, supplier: TRACES[id].supplier,
+      cls: 'tab', pressed: id === trace ? 'true' : 'false',
+      bg: id === trace ? '#fff0e1' : 'transparent', color: id === trace ? '#1c130c' : '#fff0e1',
+      pick: () => this.setState({ trace: id })
+    }));
+    const clean = t.ok.every(Boolean);
+
+    const imsRows = IMS.map((r) => {
+      const dec = ims[r.id] || 'none';
+      return {
+        ...r, taxFmt: inr(r.tax), groupLabel: 'IMS action for ' + r.id,
+        whyText: auto ? r.why : dec === 'none' ? 'No action yet. Deemed accepted.' : 'Your call.',
+        whyColor: auto ? '#1c130c' : '#7b6352',
+        opts: [['accept', 'Accept'], ['reject', 'Reject'], ['pending', 'Pending']].map(([k, label]) => ({
+          label, cls: 'seg-btn ' + k + (dec === k ? ' on' : ''), pressed: dec === k ? 'true' : 'false',
+          set: () => this.setState({ ims: { ...ims, [r.id]: dec === k ? undefined : k } })
+        }))
+      };
+    });
+    let claim = 0, hold = 0, rej = 0, risk = 0, riskN = 0;
+    IMS.forEach((r) => {
+      const dec = ims[r.id] || 'none';
+      if (dec === 'pending') hold += r.tax;
+      else if (dec === 'reject') rej += r.tax;
+      else { claim += r.tax; if (r.suggest !== 'accept') { risk += r.tax; riskN++; } }
+    });
+    const total = claim + hold + rej;
+    const credit = {
+      claim: inr(claim), hold: inr(hold), rej: inr(rej), risk: inr(risk),
+      pClaim: (claim / total * 100).toFixed(1), pHold: (hold / total * 100).toFixed(1), pRej: (rej / total * 100).toFixed(1),
+      riskNote: riskN ? riskN + ' record' + (riskN > 1 ? 's' : '') + ' you are claiming should not be claimed yet. Run Autopilot to see why.' : 'Every rupee you claim has a clean trail behind it.'
+    };
+
+    return {
+      accent, font, busy, loadedCount,
+      toggleSort: () => this.toggleSort(),
+      sortLabel: this.state.sorted ? 'Scatter it again' : 'Sort it out',
+      sortPressed: this.state.sorted ? 'true' : 'false',
+      heroHint: this.state.sorted ? 'Sorted into five piles. 9 slips look fishy. Push the piles around.' : 'Move through the pile. Click to blast it. Flick fast to throw.',
+      tickerItems: TICKER.concat(TICKER).map(([tag, text]) => ({ tag, text })), files, steps, logs, elapsed, hint, cd,
+      run: () => this.run(),
+      reset: () => { clearInterval(this.timer); this.script = []; this.setState({ dropped: {}, phase: 'idle', tick: 0, ran: {} }); },
+      demo: () => {
+        const all = { inv: true, bank: true, tally: true, ims: true, ewb: true };
+        this.scrollTo('play');
+        this.setState({ dropped: all, phase: 'idle' }, () => this.run());
+      },
+      runDisabled: busy || loadedCount < 2,
+      runLabel: busy ? 'Reconciling…' : phase === 'done' ? 'Run again' : 'Reconcile Sep 2026',
+      showResult: phase === 'done', showEmpty: phase !== 'done',
+      emptyTitle: busy ? 'Working…' : 'Nothing yet',
+      emptyBody: busy ? 'Matching four ledgers against each other. Watch the log.' : 'Drop at least two sources and press Reconcile.',
+      flags, flagCount: flagsAll.length, noFlags: phase === 'done' && flagsAll.length === 0,
+      matched: 42 - invFlags.length,
+      holdItc: inr(invFlags.reduce((a, g) => a + g.tax, 0)),
+      missingNote: missingAll.length ? 'Not checked without ' + missingAll.join(', ') + '. Add them and run again.' : '',
+      stations, traceTabs,
+      trace: { ...t, badgeBg: clean ? '#1c130c' : accent, badgeFg: clean ? '#fff0e1' : '#1c130c' },
+      imsRows, credit,
+      autopilot: () => { const m = {}; IMS.forEach((r) => { m[r.id] = r.suggest; }); this.setState({ ims: m, auto: true }); },
+      imsReset: () => this.setState({ ims: {}, auto: false }),
+      modules: MODULES.map(([letter, name, star, desc]) => ({ letter, name, star, desc }))
+    };
+  }
+}
+
+function view(v) {
+const {accent, autopilot, busy, cd, credit, demo, elapsed, emptyBody, emptyTitle, files, flagCount, flags, font, heroHint, hint, holdItc, imsReset, imsRows, loadedCount, logs, matched, missingNote, modules, noFlags, reset, run, runDisabled, runLabel, showEmpty, showResult, sortLabel, sortPressed, stations, steps, tickerItems, toggleSort, trace, traceTabs} = v;
+return __L.html`<div style="--acc: ${accent}; --fd: ${font.d}; --fdw: ${font.w}; --fds: ${font.s}; --fdl: ${font.l}; --fdt: ${font.t}; --fb: ${font.b}; --fm: ${font.m}; min-height: 100vh; background: #fff0e1; color: #1c130c; font-family: var(--fb)">
+
+
+<header style="position: sticky; top: 0; z-index: 10; background: #fff0e1; border-bottom: 1px solid #1c130c">
+<div style="max-width: 1360px; margin: 0 auto; padding: 10px 24px; display: flex; align-items: center; gap: 28px; flex-wrap: wrap">
+<a href="#top" aria-label="Half CA home" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #1c130c">
+<span style="width: 34px; height: 34px; border: 1.5px solid #1c130c; border-radius: 4px; display: flex; overflow: hidden">
+<span style="width: 50%; background: ${accent}"></span><span style="width: 50%; background: #1c130c"></span>
+</span>
+<span style="font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: 24px; letter-spacing: .02em">HALF CA</span>
+</a>
+<nav aria-label="Sections" class="hidem" style="display: flex; gap: 22px">
+<a class="navlink" href="#play">Playground</a>
+<a class="navlink" href="#goods">Follow the Goods</a>
+<a class="navlink" href="#credit">Follow the Credit</a>
+<a class="navlink" href="#modules">Modules</a>
+</nav>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap">
+<div class="hidem" style="font-family: var(--fm); font-size: 12px; display: flex; align-items: center; gap: 8px; color: #7b6352">
+<span>GSTR-2B IN</span>
+<span style="color: #1c130c; font-weight: 700; font-variant-numeric: tabular-nums">${cd.d}d ${cd.h}:${cd.m}:${cd.s}</span>
+</div>
+<a class="btn dark" href="/upload/" style="min-height: 44px; padding: 10px 18px">Open the app</a>
+</div>
+</div>
+</header>
+
+
+<section id="top" style="position: relative; overflow: hidden; border-bottom: 1.5px solid #1c130c; touch-action: pan-y">
+<canvas id="hc-field" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block"></canvas>
+<div class="herobox" style="position: relative; max-width: 1360px; margin: 0 auto; padding: 72px 24px 48px; display: flex; flex-direction: column; pointer-events: none">
+<div style="display: flex; flex-wrap: wrap; gap: 10px 24px; font-family: var(--fm); font-size: 12px; letter-spacing: .1em; color: #7b6352; margin-bottom: 28px">
+<span>GST RECONCILIATION</span><span>/</span><span>FOR INDIAN BUSINESSES</span><span>/</span><span style="color: #1c130c">HALF CA FOLLOWS THE GOODS</span>
+</div>
+<h1 style="margin: 0; max-width: 780px; font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: clamp(54px, 7.6vw, 124px); line-height: .92; text-transform: var(--fdt)">
+Drop the month's files. <span style="background: ${accent}; padding: 0 .12em; box-decoration-break: clone; -webkit-box-decoration-break: clone">Half CA</span> sorts out the rest.
+</h1>
+<p style="margin: 32px 0 0; max-width: 520px; font-size: 19px; line-height: 1.5; background: rgba(255, 240, 225, .82); border-radius: 4px">
+Invoices, bank statement, Tally day book, IMS feed and e-way bills go in. Matches, mismatches and the credit you can safely claim come out, before the GSTR-3B deadline.
+</p>
+<div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; pointer-events: auto; align-self: flex-start">
+<button class="btn acc" type="button" onClick=${toggleSort} aria-pressed=${sortPressed}>${sortLabel}</button>
+<button class="btn dark" type="button" onClick=${demo}>Run the demo</button>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; margin-top: 18px; font-family: var(--fm); font-size: 12px; color: #4a3626">
+<span class="hint-dot"></span>
+<span>${heroHint}</span>
+</div>
+</div>
+</section>
+
+
+<div class="tickwrap" aria-hidden="true" style="background: #1c130c; color: #fff0e1; overflow: hidden; border-bottom: 1.5px solid #1c130c; font-family: var(--fm); font-size: 13px">
+<div class="ticker">
+${(tickerItems || []).map((k, $index) => __L.html`
+<span style="padding: 13px 22px; white-space: nowrap; display: flex; align-items: center; gap: 10px"><span style="color: ${accent}">${k.tag}</span>${k.text}</span>
+`)}
+</div>
+</div>
+
+
+<section id="play" style="max-width: 1360px; margin: 0 auto; padding: 24px 24px 96px; scroll-margin-top: 70px">
+<div style="border: 1.5px solid #1c130c; border-radius: 10px; background: #fff8f0; overflow: hidden">
+<div style="display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; padding: 14px 20px; border-bottom: 1.5px solid #1c130c; font-family: var(--fm); font-size: 12px">
+<span style="font-weight: 700">§01 PLAYGROUND</span>
+<span style="color: #7b6352">Arora Hardware Distributors · 07AAKFA4821M1ZA · Period Sep 2026</span>
+<span style="margin-left: auto; padding: 3px 8px; border: 1px solid #1c130c; border-radius: 3px">SYNTHETIC DATA</span>
+</div>
+<div style="display: flex; flex-wrap: wrap">
+
+
+<div style="flex: 1 1 320px; min-width: 0; padding: 24px 20px; border-right: 1px solid #ebcfb8">
+<div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700">1 · Drop sources</h2>
+<span style="font-family: var(--fm); font-size: 12px; color: #7b6352">${loadedCount} / 5 loaded</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+${(files || []).map((f, $index) => __L.html`
+<button type="button" class=${f.cls} aria-pressed=${f.pressed} onClick=${f.toggle} disabled=${busy}>
+<span class="box">${f.mark}</span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 15px; font-weight: 600">${f.name}</span>
+<span style="font-family: var(--fm); font-size: 11.5px; color: #7b6352">${f.file} · ${f.meta}</span>
+</span>
+<span style="margin-left: auto; font-family: var(--fm); font-size: 11px; color: #7b6352; white-space: nowrap">${f.status}</span>
+</button>
+`)}
+</div>
+<div style="display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap">
+<button class="btn dark" type="button" onClick=${run} disabled=${runDisabled} style="flex: 1 1 auto">${runLabel}</button>
+<button class="btn ghost" type="button" onClick=${reset} disabled=${busy}>Clear</button>
+</div>
+<p style="margin: 12px 0 0; font-size: 13px; color: #7b6352">${hint}</p>
+</div>
+
+
+<div style="flex: 1 1 340px; min-width: 0; padding: 24px 20px; border-right: 1px solid #ebcfb8; display: flex; flex-direction: column">
+<div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700">2 · Live steps</h2>
+<span style="font-family: var(--fm); font-size: 12px; color: #7b6352">${elapsed}</span>
+</div>
+<div>
+${(steps || []).map((s, $index) => __L.html`
+<div class=${s.cls}><span class="dot"></span><span>${s.label}</span><span class="st">${s.st}</span></div>
+`)}
+</div>
+<div style="margin-top: 18px; flex: 1; min-height: 200px; background: #1c130c; border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: flex-end">
+${(logs || []).map((l, $index) => __L.html`
+<div class=${l.cls}><span style="color: ${accent}">${l.tag}</span> ${l.text}</div>
+`)}
+<div class="log">$ <span class="cursor"></span></div>
+</div>
+</div>
+
+
+<div style="flex: 1 1 360px; min-width: 0; padding: 24px 20px">
+<h2 style="margin: 0 0 16px; font-size: 15px; font-weight: 700">3 · What came out</h2>
+${showResult ? __L.html`
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border: 1.5px solid #1c130c; border-radius: 6px; overflow: hidden">
+<div style="padding: 14px 16px; border-right: 1.5px solid #1c130c">
+<div style="font-family: var(--fm); font-size: 11px; letter-spacing: .08em; color: #7b6352">CLEAN</div>
+<div style="font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: 44px; line-height: 1.1">${matched}<span style="font-size: 22px; color: #7b6352"> / 42</span></div>
+</div>
+<div style="padding: 14px 16px; background: ${accent}">
+<div style="font-family: var(--fm); font-size: 11px; letter-spacing: .08em">FISHY</div>
+<div style="font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: 44px; line-height: 1.1">${flagCount}</div>
+</div>
+</div>
+<p style="margin: 14px 0 4px; font-size: 14px">ITC to hold: <strong>${holdItc}</strong></p>
+<div>
+${(flags || []).map((g, $index) => __L.html`
+<button type="button" class="flag" onClick=${g.open}>
+<span class="tag">${g.tag}</span>
+<span style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+<span class="flagt" style="font-size: 14.5px; font-weight: 600">${g.title}</span>
+<span style="font-size: 13px; color: #7b6352; line-height: 1.4">${g.body}</span>
+</span>
+</button>
+`)}
+</div>
+${noFlags ? __L.html`
+<p style="font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: 34px; margin: 20px 0 0; text-transform: var(--fdt)">Nothing fishy here. Yet.</p>
+` : ''}
+${missingNote ? __L.html`
+<p style="margin: 14px 0 0; font-size: 13px; color: #7b6352">${missingNote}</p>
+` : ''}
+` : ''}
+${showEmpty ? __L.html`
+<div style="height: calc(100% - 40px); min-height: 240px; border: 1px dashed #c9a98e; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center">
+<span style="font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: 30px; text-transform: var(--fdt)">${emptyTitle}</span>
+<span style="font-size: 14px; color: #7b6352; max-width: 260px">${emptyBody}</span>
+</div>
+` : ''}
+</div>
+
+</div>
+</div>
+</section>
+
+
+<section id="goods" style="position: relative; overflow: hidden; background: #1c130c; color: #fff0e1; scroll-margin-top: 56px">
+<canvas id="hc-dots" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none"></canvas>
+<div style="position: relative; max-width: 1360px; margin: 0 auto; padding: 96px 24px">
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 48px">
+<div style="max-width: 760px">
+<div style="font-family: var(--fm); font-size: 12px; letter-spacing: .1em; color: ${accent}; margin-bottom: 18px">§02 FOLLOW THE GOODS</div>
+<h2 style="margin: 0; font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: clamp(44px, 6vw, 88px); line-height: .95; text-transform: var(--fdt)">An invoice is a claim. The road is the proof.</h2>
+</div>
+<p style="margin: 0; max-width: 380px; font-size: 17px; line-height: 1.55; color: #e9d3c0">Half CA links every purchase to its e-way bill, the vehicle on the road, the goods receipt in Tally and the payment. Pick an invoice to see where the trail holds and where it breaks.</p>
+</div>
+<div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 40px">
+${(traceTabs || []).map((t, $index) => __L.html`
+<button type="button" class=${t.cls} aria-pressed=${t.pressed} onClick=${t.pick} style="border-color: #fff0e1; color: ${t.color}; background: ${t.bg}">${t.id} · ${t.supplier}</button>
+`)}
+</div>
+<div style="background: #fff0e1; color: #1c130c; border-radius: 10px; padding: 40px 28px 32px">
+<div class="route">
+${(stations || []).map((n, $index) => __L.html`
+<div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+<div style="display: flex; align-items: center">
+<span class=${n.segL}></span>
+<span class=${n.nodeCls}>${n.mark}</span>
+<span class=${n.segR}></span>
+</div>
+<div style="text-align: center; padding: 0 8px">
+<div style="font-family: var(--fm); font-size: 11px; letter-spacing: .08em; color: #7b6352">${n.num}</div>
+<div style="font-size: 17px; font-weight: 700; margin: 4px 0">${n.label}</div>
+<div class=${n.detCls} style="font-size: 13.5px; line-height: 1.4">${n.detail}</div>
+</div>
+</div>
+`)}
+</div>
+<div style="margin-top: 36px; padding-top: 24px; border-top: 1.5px solid #1c130c; display: flex; flex-wrap: wrap; gap: 16px 32px; align-items: baseline">
+<span style="font-family: var(--fm); font-size: 12px; letter-spacing: .08em; padding: 4px 9px; border-radius: 3px; background: ${trace.badgeBg}; color: ${trace.badgeFg}">${trace.badge}</span>
+<p style="margin: 0; flex: 1 1 420px; font-size: 22px; line-height: 1.4; font-weight: 500">${trace.verdict}</p>
+<span style="font-family: var(--fm); font-size: 13px; color: #7b6352">${trace.amount} · ${trace.gstin}</span>
+</div>
+</div>
+</div>
+</section>
+
+
+<section id="credit" style="max-width: 1360px; margin: 0 auto; padding: 96px 24px; scroll-margin-top: 56px">
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 40px">
+<div style="max-width: 760px">
+<div style="font-family: var(--fm); font-size: 12px; letter-spacing: .1em; color: #7b6352; margin-bottom: 18px">§03 FOLLOW THE CREDIT · IMS AUTOPILOT</div>
+<h2 style="margin: 0; font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: clamp(44px, 6vw, 88px); line-height: .95; text-transform: var(--fdt)">No action means accepted. Choose on purpose.</h2>
+</div>
+<p style="margin: 0; max-width: 380px; font-size: 17px; line-height: 1.55">Every IMS record needs a call: accept, reject or keep pending. Make the calls yourself, or let Autopilot decide and show its reasons.</p>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 32px">
+<div style="flex: 999 1 640px; min-width: 0; border-top: 1.5px solid #1c130c">
+${(imsRows || []).map((r, $index) => __L.html`
+<div class="imsrow">
+<div style="min-width: 0">
+<div style="font-weight: 700; font-size: 15px">${r.supplier}</div>
+<div style="font-family: var(--fm); font-size: 11.5px; color: #7b6352">${r.id} · ${r.gstin}</div>
+</div>
+<div style="font-family: var(--fm); font-size: 14px; font-weight: 500">${r.taxFmt}</div>
+<div style="font-size: 13px; line-height: 1.4; color: ${r.whyColor}">${r.whyText}</div>
+<div role="group" aria-label=${r.groupLabel} style="display: flex; gap: 6px">
+${(r.opts || []).map((o, $index) => __L.html`
+<button type="button" class=${o.cls} aria-pressed=${o.pressed} onClick=${o.set}>${o.label}</button>
+`)}
+</div>
+</div>
+`)}
+<div style="display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap">
+<button class="btn acc" type="button" onClick=${autopilot}>Run IMS Autopilot</button>
+<button class="btn ghost" type="button" onClick=${imsReset}>Reset to no action</button>
+</div>
+</div>
+
+<aside style="flex: 1 1 320px; min-width: 0; border: 1.5px solid #1c130c; border-radius: 10px; padding: 24px; background: #fff8f0; align-self: flex-start">
+<div style="font-family: var(--fm); font-size: 11px; letter-spacing: .08em; color: #7b6352">ITC YOU WILL CLAIM</div>
+<div style="font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: 56px; line-height: 1.05; margin: 6px 0 18px; font-variant-numeric: tabular-nums">${credit.claim}</div>
+<div style="display: flex; height: 14px; border: 1.5px solid #1c130c; border-radius: 3px; overflow: hidden">
+<span style="width: ${credit.pClaim}%; background: #1c130c; transition: width .35s ease"></span>
+<span style="width: ${credit.pHold}%; background: ${accent}; transition: width .35s ease"></span>
+<span style="width: ${credit.pRej}%; background: repeating-linear-gradient(135deg, #1c130c 0 1.5px, transparent 1.5px 6px); transition: width .35s ease"></span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 18px; font-size: 14px">
+<div style="display: flex; align-items: center; gap: 10px"><span style="width: 12px; height: 12px; background: #1c130c; border-radius: 2px"></span>Claimed<span style="margin-left: auto; font-family: var(--fm)">${credit.claim}</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><span style="width: 12px; height: 12px; background: ${accent}; border: 1px solid #1c130c; border-radius: 2px"></span>Held as pending<span style="margin-left: auto; font-family: var(--fm)">${credit.hold}</span></div>
+<div style="display: flex; align-items: center; gap: 10px"><span style="width: 12px; height: 12px; border: 1px solid #1c130c; background: repeating-linear-gradient(135deg, #1c130c 0 1px, transparent 1px 4px); border-radius: 2px"></span>Rejected<span style="margin-left: auto; font-family: var(--fm)">${credit.rej}</span></div>
+</div>
+<div style="margin-top: 22px; padding-top: 18px; border-top: 1px solid #ebcfb8">
+<div style="font-family: var(--fm); font-size: 11px; letter-spacing: .08em; color: #7b6352">CLAIMED BUT FISHY</div>
+<div style="font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: 34px; margin-top: 4px">${credit.risk}</div>
+<p style="margin: 6px 0 0; font-size: 13.5px; line-height: 1.45; color: #7b6352">${credit.riskNote}</p>
+</div>
+</aside>
+</div>
+</section>
+
+
+<section id="modules" style="border-top: 1.5px solid #1c130c; scroll-margin-top: 56px">
+<div style="max-width: 1360px; margin: 0 auto; padding: 96px 24px">
+<div style="font-family: var(--fm); font-size: 12px; letter-spacing: .1em; color: #7b6352; margin-bottom: 18px">§04 EVERYTHING INSIDE</div>
+<h2 style="margin: 0 0 40px; font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: clamp(44px, 6vw, 88px); line-height: .95; text-transform: var(--fdt)">A to I. One month, closed.</h2>
+<div style="border-top: 1.5px solid #1c130c">
+${(modules || []).map((m, $index) => __L.html`
+<div class="mod">
+<span style="font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: 40px; line-height: 1">${m.letter}</span>
+<span style="font-size: 22px; font-weight: 700">${m.name}<span style="color: #7b6352; font-weight: 500">${m.star}</span></span>
+<span class="mdesc" style="font-size: 16px; line-height: 1.5; color: #4a3626">${m.desc}</span>
+</div>
+`)}
+</div>
+</div>
+</section>
+
+
+<section style="background: ${accent}; border-top: 1.5px solid #1c130c">
+<div style="max-width: 1360px; margin: 0 auto; padding: 110px 24px 56px">
+<h2 style="margin: 0; font-family: var(--fd); font-weight: var(--fdw); font-stretch: var(--fds); letter-spacing: var(--fdl); font-size: clamp(64px, 12vw, 190px); line-height: .88; text-transform: var(--fdt)">Nothing fishy here.<br />Yet.</h2>
+<div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 44px">
+<a class="btn dark" href="/upload/">Open Half CA</a>
+<button class="btn ghost" type="button" onClick=${demo}>Run the demo again</button>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: 96px; padding-top: 20px; border-top: 1.5px solid #1c130c; font-family: var(--fm); font-size: 12px">
+<span style="font-weight: 700">HALF CA</span>
+<span>Built at [HACKATHON NAME]</span>
+<span>By [TEAM NAMES]</span>
+<span style="margin-left: auto">All data on this page is synthetic.</span>
+</div>
+</div>
+</section>
+
+</div>`;
+}
+const props = {"accent": "#FF7A1A", "speed": "normal", "fonts": "Anton + Space Grotesk"};
+const sel = document.getElementById('fp'), ac = document.getElementById('ac');
+["Anton + Space Grotesk", "Bricolage + Geist", "Instrument Serif + Geist", "Archivo Expanded + Plex"].forEach((o) => { const e = document.createElement('option'); e.textContent = o; sel.appendChild(e); });
+sel.value = props.fonts; ac.value = props.accent;
+const draw = () => __L.render(__L.html`<${Component} ...${props} />`, document.getElementById('app'));
+sel.onchange = () => { props.fonts = sel.value; draw(); };
+ac.oninput = () => { props.accent = ac.value; draw(); };
+draw();
+}
+</script>
+</body>
+</html>

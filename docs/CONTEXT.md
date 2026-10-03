@@ -169,6 +169,14 @@ code fingerprint changes and re-reconciles an uploaded dataset instead of replac
   editing an amount in the CSV and re-uploading makes the PDF disagree with the books.
 - IMS reasons stay templated on purpose (see CLAUDE.md decisions).
 
+## 9b2. Landing page
+
+- `frontend/public/landing.html` is the user's own landing page (self-contained: Preact + htm
+  inlined, Google Fonts from the CDN). It is served at `/` (web Caddy `rewrite / /landing.html`;
+  Next dev `beforeFiles` rewrite). Edit it as a static file; it is not part of the Next app.
+- The Upload screen has only "Choose a folder", "Choose files", drag-and-drop and "Download
+  sample folder". To restore the demo data on the server: `make deploy-reset`.
+
 ## 9c. Report and evaluation (built in M6)
 
 - **Audit report** (`halfca/report/pdf.py`, `templates/audit.html.j2` + `audit.css`):

@@ -18,7 +18,12 @@ export default function config(phase: string): NextConfig {
       // gzip buffers the copilot's server-sent events into one late chunk.
       compress: false,
       async rewrites() {
-        return [{ source: "/api/:path*", destination: `${api}/api/:path*` }];
+        return {
+          // Same as production's Caddy: the landing page is the front door.
+          beforeFiles: [{ source: "/", destination: "/landing.html" }],
+          afterFiles: [{ source: "/api/:path*", destination: `${api}/api/:path*` }],
+          fallback: [],
+        };
       },
     };
   }

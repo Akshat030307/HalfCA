@@ -19,8 +19,9 @@
 	}
 
 	handle {
+		# The landing page (frontend/public/landing.html) is the front door; the app starts at /upload/.
 		@root path /
-		redir @root /upload/ 302
+		rewrite @root /landing.html
 
 		@static path /_next/static/*
 		header @static Cache-Control "public, max-age=31536000, immutable"
