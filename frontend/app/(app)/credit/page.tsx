@@ -1,5 +1,5 @@
+import { CreditScreen } from "@/components/screens/credit";
 import { PageHeader } from "@/components/shell/page-header";
-import { ComingSoon } from "@/components/system/coming-soon";
 import { Chip } from "@/components/ui/chip";
 
 export default function CreditPage() {
@@ -7,16 +7,10 @@ export default function CreditPage() {
     <>
       <PageHeader
         title="Follow the Credit"
-        subtitle="Whose tax credit is your tax credit built on?"
+        subtitle="Your input tax credit is only as real as your supplier's supplier."
         right={<Chip tone="orange">★ Only on Half CA</Chip>}
       />
-      <ComingSoon
-        milestone="M4"
-        items={[
-          "Supplier graph that snaps a 5-firm ring into a circle",
-          "Kaveri Metals taint score and ITC at risk",
-        ]}
-      />
+      <CreditScreen />
     </>
   );
 }

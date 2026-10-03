@@ -21,6 +21,35 @@ DONUT = [
 ]
 
 
+def thread_examples(ds) -> dict[str, str | None]:  # noqa: ANN001
+    """Two invoices for the Overview's four-threads card, chosen by rule: the biggest one
+    that clears all four threads (showcase suppliers first), and the biggest one that
+    clears the paperwork but fails the road (paper-only first)."""
+    inv = ds.res["invoices"]
+    tags = ds.raw["counterparties"].set_index("gstin").tags.fillna("")
+    showcase = {g for g, t in tags.items() if "showcase" in str(t)}
+    clean = inv[
+        (inv.status == "matched")
+        & (inv.payments > 0)
+        & (inv.ims_decision == "Accept")
+        & (inv.physical == "verified")
+    ]
+    pick = clean[clean.counterparty_gstin.isin(showcase)]
+    pick = pick if len(pick) else clean
+    failed = inv[
+        (inv.status == "matched")
+        & inv.physical.isin(["paper_only", "impossible_journey", "recycled_ewb", "missing_ewb"])
+    ]
+    failed = failed.assign(_o=(failed.physical != "paper_only").astype(int))
+    failed = failed.sort_values(["_o", "total"], ascending=[True, False])
+    return {
+        "all_clear": pick.sort_values("total", ascending=False).invoice_id.iloc[0]
+        if len(pick)
+        else None,
+        "road_fail": failed.invoice_id.iloc[0] if len(failed) else None,
+    }
+
+
 @router.get("/summary", response_model=Summary)
 def summary() -> dict:
     ds = current()
@@ -59,6 +88,7 @@ def summary() -> dict:
         "anomalies": s["anomalies"],
         "gstins": s.get("gstins", {}),
         "llm": llm_info(ds),
+        "examples": thread_examples(ds),
     }
 
 

@@ -63,3 +63,8 @@ export function countdown(ms: number): string {
   const h = hours % 24;
   return `${d}d ${String(h).padStart(2, "0")}h`;
 }
+
+/** 3812 4471 0093 (e-way bill numbers read in groups of four). */
+export function ewb(no: string): string {
+  return no.replace(/(\d{4})(?=\d)/g, "$1 ");
+}

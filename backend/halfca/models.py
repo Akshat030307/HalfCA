@@ -138,6 +138,7 @@ class Summary(BaseModel):
     anomalies: dict[str, int]
     gstins: dict[str, int]
     llm: LlmInfo
+    examples: dict[str, str | None]  # all_clear / road_fail invoice ids for the threads card
 
 
 # ── matching ─────────────────────────────────────────────────────────────────

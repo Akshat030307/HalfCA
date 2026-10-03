@@ -4,7 +4,7 @@ Read this before doing anything. It is the working memory of the project: where 
 how they run, what is decided, and what bites. `CLAUDE.md` is the product spec (what to
 build); `docs/PLAN.md` is the build order. This file is how to operate.
 
-Last updated: 2026-10-03, after M3.
+Last updated: 2026-10-03, after M4.
 
 ---
 
@@ -16,12 +16,12 @@ Last updated: 2026-10-03, after M3.
 | M1 synthetic data | ✅ | Demo (seed 2609) + random mode, truth labels, DuckDB loader |
 | M2 engines | ✅ | Every demo-table number found by the engines; Groq stage-4 wired |
 | M3 API + upload | ✅ | All endpoints, real folder upload with progress jobs, reset, demo pack with invoice PDFs |
-| **M4 screens** | **next** | 9 screens, both themes; start with Upload (folder drop) then Overview, Goods ★, Credit ★ |
-| M5 AI layer | todo | Copilot SSE, MCP server, LLM reasons, PDF extraction |
+| M4 screens | ✅ | All 9 screens on live API data, both themes, 1280–1920 px |
+| **M5 AI layer** | **next** | Copilot SSE (UI shell exists in `components/screens/copilot.tsx`), MCP server, LLM reasons, PDF extraction |
 | M6 ship | todo | PDF report, `make eval`, RUNBOOK, final deploy |
 
 Health right now: `make test` green (102 backend tests + frontend typecheck/lint).
-The site shows the shell with placeholder screens; screens light up in M4.
+All 9 screens render real data. The audit-report button on Liability is disabled until M6.
 
 ## 2. Working with this user
 
@@ -46,6 +46,7 @@ The site shows the shell with placeholder screens; screens light up in M4.
   # preferredColorScheme=1 light, =0 dark. For the live site add:
   #   --host-resolver-rules="MAP halfca.akshatchowdhary.online <server-ip>"
   ```
+- Screenshots of animated screens: Chrome's `--virtual-time-budget` does **not** run the motion animations (elements stay at opacity 0). Drive the real Chrome with `puppeteer-core` from a scratch dir (`npm i puppeteer-core`, `executablePath: "/usr/bin/google-chrome-stable"`, `page.emulateMediaFeatures([{name: "prefers-color-scheme", value: "dark"}])`), wait real time, and click buttons by text to test flows (e.g. "Use demo dataset", "Approve 197 accepts").
 - Gotchas:
   - `pkill -f "<pattern>"` can match and kill **your own shell** if the command line contains the pattern. Free a port with `fuser -k 8000/tcp` instead.
   - The laptop's `curl` cannot do HTTPS (certificate store issue). Use Python (`uv run python -c "import httpx; ..."`) or run the check on the VPS over ssh.
@@ -113,6 +114,14 @@ code fingerprint changes and re-reconciles an uploaded dataset instead of replac
 - Light mode = pale orange + peach (`--bg #FFF0E1`), dark mode = **pure black** (`#000`). Orange is the brand accent; amber (status) is golden so it never reads as brand. Tokens in `app/globals.css` and CLAUDE.md.
 - Logo: circle split top orange / bottom ink with "CA" half-inverted; wordmark "HALF CA".
 - Frontend is a static export: no server data fetching at runtime; screens fetch `/api/*` on the client (SWR). Dev uses Next rewrites; prod uses the Caddy proxy.
+
+## 8b. Screens (built in M4)
+
+- One client component per screen in `frontend/components/screens/*.tsx`; `app/(app)/*/page.tsx` are thin server wrappers (PageHeader + screen). Data via `useApi(path)` (SWR, `lib/hooks.ts`); after a job finishes the Upload screen calls `useRefreshAll()`.
+- Shared UI: `components/ui/` (card, button, chip, kpi, count-up, states, toast), charts in `components/charts/` (donut, hbars, waterfall, benford), the map in `components/goods/route-map.tsx` (arc-length path sampler in `lib/path.ts`), the graph in `components/credit/ring-graph.tsx`, the evidence drawer in `components/evidence/evidence-drawer.tsx` (`useEvidence()(flag)` from anywhere).
+- Story records are picked by rule, never by hard-coded numbers: Overview threads come from `summary.examples`; Goods beats from `/goods.beats`; Discrepancy hero cards from `pickHeroes()` (abolished slab charged *below* the right rate, IGST on intra-state, biggest near-duplicate); the Credit focus graph from `showcase` tags. For the demo they land on PP/26/0912 + MB/0877, LD/2291 → MB/0877 → KN/1502 → JP×3, DF/0450 + AR/S/2219 + INV/418, Patel/Mehta/Singh + Bharat/Ostwal/Northline.
+- Animations use `motion/react`; React's lint rules forbid setState synchronously in effects and reassigning render-time variables, so sequences key their state by a run counter and timers call setState from callbacks.
+- IMS approvals hit the shared server state: approving on the live site shows as approved for every viewer until the dataset changes.
 
 ## 9. API and upload (built in M3)
 

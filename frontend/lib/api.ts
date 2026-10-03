@@ -108,6 +108,7 @@ export type Summary = {
   anomalies: Record<string, number>;
   gstins: Record<string, number>;
   llm: LlmInfo;
+  examples: { all_clear: string | null; road_fail: string | null };
 };
 
 // ── matching ─────────────────────────────────────────────────────────────────

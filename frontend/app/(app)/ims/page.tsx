@@ -1,5 +1,5 @@
+import { ImsHeaderRight, ImsScreen } from "@/components/screens/ims";
 import { PageHeader } from "@/components/shell/page-header";
-import { ComingSoon } from "@/components/system/coming-soon";
 
 export default function ImsPage() {
   return (
@@ -7,11 +7,9 @@ export default function ImsPage() {
       <PageHeader
         title="IMS Autopilot"
         subtitle="Accept, reject or hold every supplier invoice before GSTR-2B locks."
+        right={<ImsHeaderRight />}
       />
-      <ComingSoon
-        milestone="M4"
-        items={["212 supplier records with a reason each", "Approve 197 accepts in one click"]}
-      />
+      <ImsScreen />
     </>
   );
 }
