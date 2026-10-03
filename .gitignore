@@ -18,6 +18,8 @@ frontend/next-env.d.ts
 !/data/.gitkeep
 .env
 *.env.local
+# Server access and the shared VPS layout (see docs/CONTEXT.md §7)
+docs/CONTEXT.local.md
 
 # OS / editors
 .DS_Store

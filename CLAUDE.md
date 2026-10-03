@@ -14,6 +14,10 @@ This file is the **complete spec**. The build order and deploy flow live in `doc
 
 @docs/CONTEXT.md
 
+Server access and the VPS layout are kept out of git, in `docs/CONTEXT.local.md` (only on the maintainer's machine):
+
+@docs/CONTEXT.local.md
+
 ### Decisions that override the original brief (2026-10-03)
 
 - **Name:** the project is **Half CA** (it was "Chungi"). Python package `halfca`, domain `halfca.akshatchowdhary.online`.

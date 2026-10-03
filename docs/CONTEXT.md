@@ -36,7 +36,7 @@ button on Liability is disabled until M6.
 
 ## 3. Local machine
 
-- Arch-based Linux (EndeavourOS). Repo: `/home/gingersnaps/HalfCA`. Not on any remote.
+- Arch-based Linux (EndeavourOS). Repo: `/home/gingersnaps/HalfCA`. Remote `origin` = https://github.com/Akshat030307/HalfCA (public); the user pushes. Keep server details out of tracked files: they go in `docs/CONTEXT.local.md` (gitignored).
 - Toolchain: Python 3.12 via **uv**; Node 26; **pnpm** installed with `npm i -g` into `~/.npm-global` and symlinked into `~/.local/bin`; Docker (legacy builder locally, so no `COPY --chmod`); `google-chrome-stable` for headless screenshots.
 - Dev: `make api` (FastAPI :8000, reload), `make web` (Next dev :3000, proxies `/api` → :8000), `make dev` (both).
 - Screenshots (useful to check UI work):
@@ -176,4 +176,4 @@ code fingerprint changes and re-reconciles an uploaded dataset instead of replac
 - Every flag needs evidence (`engines/common.py`).
 - `ruff` line length 100; `ruff format` then `ruff check`. TypeScript strict, no `any`, prettier width 100.
 - Keep `deploy/rsync-exclude` excluding `.env`, `data/`, `node_modules`, `.venv`.
-- This file contains VPS layout details. If the repo is ever published, review this file first.
+- The repo is public. Server access and the shared VPS's layout live only in `docs/CONTEXT.local.md` (gitignored); never put them in tracked files.
