@@ -1,45 +1,46 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
-from halfca import config, store
 from halfca.data.write import source_names
-from halfca.models import DatasetInfo, SourceFile
+from halfca.models import DatasetInfo
+
+from ..state import Dataset, current
 
 router = APIRouter()
 
 # Which raw table carries each uploaded file's records.
 _SOURCE_TABLE = {
-    "invoices": "raw_invoices",
-    "bank": "raw_bank",
-    "ledger": "raw_ledger",
-    "ims": "raw_ims",
-    "eway": "raw_eway_bills",
+    "invoices": "invoices",
+    "bank": "bank",
+    "ledger": "ledger",
+    "ims": "ims",
+    "eway": "eway_bills",
 }
 
 
-@router.get("/dataset", response_model=DatasetInfo)
-def dataset() -> DatasetInfo:
-    if not config.DB_PATH.is_file():
-        raise HTTPException(status_code=503, detail="Demo data has not been generated yet")
-    meta = store.meta()
-    with store.connect() as con:
-        names = [r[0] for r in con.execute("SHOW TABLES").fetchall() if r[0].startswith("raw_")]
-        counts = {
-            n.removeprefix("raw_"): con.execute(f'SELECT count(*) FROM "{n}"').fetchone()[0]
-            for n in names
-        }
+def dataset_info(ds: Dataset) -> dict:
+    meta = ds.meta
     files = source_names(str(meta["period"]))
-    return DatasetInfo(
-        scenario=str(meta["scenario"]),
-        seed=int(meta["seed"]),  # type: ignore[arg-type]
-        period=str(meta["period"]),
-        as_of=str(meta["as_of"]),
-        user_gstin=str(meta["user_gstin"]),
-        user_name=str(meta["user_name"]),
-        sources=[
-            SourceFile(kind=k, filename=files[k], records=counts.get(t.removeprefix("raw_"), 0))
+    counts = {k: len(v) for k, v in ds.raw.items()}
+    seed = meta.get("seed")
+    return {
+        "dataset_id": ds.dataset_id,
+        "scenario": str(meta.get("scenario")),
+        "seed": int(seed) if seed is not None else None,
+        "period": str(meta["period"]),
+        "as_of": str(meta["as_of"]),
+        "user_gstin": str(meta["user_gstin"]),
+        "user_name": str(meta["user_name"]),
+        "sources": [
+            {"kind": k, "filename": files[k], "records": counts.get(t, 0)}
             for k, t in _SOURCE_TABLE.items()
         ],
-        counts=counts,
-    )
+        "counts": counts,
+        "uploaded_files": list(meta.get("uploaded_files") or []),
+    }
+
+
+@router.get("/dataset", response_model=DatasetInfo)
+def dataset() -> dict:
+    return dataset_info(current())

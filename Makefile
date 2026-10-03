@@ -13,7 +13,7 @@ COMPOSE  := cd $(VPS_DIR)/deploy && docker compose
 # container needs a moment before its admin endpoint listens.
 RELOAD_WEB := for i in $$(seq 1 15); do $(COMPOSE) exec -T web caddy reload --address 127.0.0.1:2019 --config /etc/caddy/Caddyfile 2>/dev/null && exit 0; sleep 1; done; echo "caddy reload failed" >&2; exit 1
 
-.PHONY: help setup data data-random api web dev mcp test eval report build \
+.PHONY: help setup data data-random demo-pack api web dev mcp test eval report build \
         deploy deploy-check deploy-domain deploy-logs deploy-reset deploy-status
 
 help: ## List targets
@@ -28,6 +28,9 @@ data: ## Generate the demo scenario (seed 2609) and load DuckDB
 
 data-random: ## Generate a random-mode dataset (SEED=7)
 	$(BACKEND) uv run python -m halfca.data.build --scenario random --seed $(SEED)
+
+demo-pack: ## Ready-to-drag demo folder (5 sources + invoice PDFs) in ./demo-pack
+	$(BACKEND) uv run python -m halfca.data.demo_pack --out ../demo-pack
 
 api: ## FastAPI on :8000 with reload
 	$(BACKEND) uv run uvicorn halfca.api.main:app --reload --port 8000

@@ -1,15 +1,18 @@
 """Run every engine over the raw tables and produce the result tables (res_*).
 
-  duplicates → matching cascade → payment/IMS links → field diffs → tax → gaps
-  → physical trail → credit taint → anomalies → IMS Autopilot → liability → summary
+  GSTIN checks → duplicates → physical trail → matching cascade → payment/IMS links
+  → field diffs → tax → gaps → credit taint → anomalies → IMS Autopilot → liability
 
-Pure: frames in, frames out. Saving is the caller's job (store.save).
+Pure: frames in, frames out. Saving is the caller's job (store.save). An optional
+`progress(step, state, detail)` callback reports the steps the Upload screen shows:
+gstin → normalise → road → match.
 """
 
 from __future__ import annotations
 
 import json
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any
@@ -19,9 +22,32 @@ import pandas as pd
 from halfca import config
 from halfca.ai.ims_autopilot import decide
 from halfca.data import routes as geo_mod
-from halfca.engines import anomaly, dupes_gaps, liability, matching, physical, taint, tax
+from halfca.engines import anomaly, dupes_gaps, identity, liability, matching, physical, taint, tax
 from halfca.engines.common import DISCREPANCY_KINDS, PHYSICAL_KINDS, Flag, counterparty, flags_frame
-from halfca.engines.matching import Adjudicator
+from halfca.engines.matching import BOOK_TYPE, Adjudicator
+from halfca.ingest.normalise import normalise_invoice_no
+
+Progress = Callable[[str, str, str | None], None]
+
+
+def _quiet(step: str, state: str, detail: str | None) -> None:
+    pass
+
+
+def _retyped_refs(inv: pd.DataFrame, ledger: pd.DataFrame) -> int:
+    """Ledger references that only match an invoice once normalised."""
+    raw = set(zip(inv.direction.map(BOOK_TYPE), inv.invoice_no, strict=True))
+    norm = set(
+        zip(inv.direction.map(BOOK_TYPE), inv.invoice_no.map(normalise_invoice_no), strict=True)
+    )
+    n = 0
+    for v in ledger[ledger.reference.notna()].itertuples():
+        if (v.voucher_type, v.reference) not in raw and (
+            v.voucher_type,
+            normalise_invoice_no(v.reference),
+        ) in norm:
+            n += 1
+    return n
 
 
 @dataclass
@@ -36,16 +62,41 @@ def _as_of(meta: dict[str, Any]) -> date:
 
 
 def reconcile(
-    frames: dict[str, pd.DataFrame], meta: dict[str, Any], adjudicator: Adjudicator | None = None
+    frames: dict[str, pd.DataFrame],
+    meta: dict[str, Any],
+    adjudicator: Adjudicator | None = None,
+    progress: Progress | None = None,
 ) -> Reconciliation:
+    say = progress or _quiet
     inv = frames["invoices"]
     ledger, bank, ims = frames["ledger"], frames["bank"], frames["ims"]
     as_of = _as_of(meta)
     user = str(meta["user_gstin"])
     names = dict(zip(frames["counterparties"].gstin, frames["counterparties"].name, strict=True))
 
+    say("gstin", "running", None)
+    id_flags, id_stats = identity.validate_gstins(inv)
+    say("gstin", "done", f"{id_stats['checked']} GSTINs · {id_stats['invalid']} invalid")
+
+    say("normalise", "running", None)
+    retyped = _retyped_refs(inv, ledger)
+    say("normalise", "done", f"{len(inv)} numbers · {retyped} retyped in the books")
+
+    say("road", "running", None)
     dup_flags, dup_of = dupes_gaps.find_duplicates(inv)
     dups = set(dup_of)
+    phys = physical.check(
+        inv, frames["eway_bills"], frames["toll_crossings"], geo_mod.load(), dup_of
+    )
+    road_failed = sum(1 for v in phys.verdicts.get("verdict", []) if v in PHYSICAL_KINDS)
+    say(
+        "road",
+        "done",
+        f"{len(phys.verdicts)} consignments · {len(frames['toll_crossings'])} "
+        f"toll crossings · {road_failed} failed",
+    )
+
+    say("match", "running", None)
     m = matching.match(inv, ledger, adjudicator)
     pay_links = matching.link_payments(inv, bank, dups)
     ims_links = matching.link_ims(inv, ims, dups)
@@ -53,9 +104,6 @@ def reconcile(
     tx = tax.verify(inv, frames["hsn_rates"])
     unmatched_flags = dupes_gaps.unmatched_flags(m.unmatched, pay_links)
     gap_flags = dupes_gaps.gaps(inv, bank, ims, m.pairs, pay_links, ims_links, dup_of, as_of)
-    phys = physical.check(
-        inv, frames["eway_bills"], frames["toll_crossings"], geo_mod.load(), dup_of
-    )
     tnt = taint.analyse(
         frames["counterparties"], frames["upstream_invoices"], inv, user, as_of, dup_of
     )
@@ -64,7 +112,8 @@ def reconcile(
     outliers, outlier_flags = anomaly.outliers(inv, pay_links, bank, dup_of, as_of)
 
     flags: list[Flag] = (
-        dup_flags
+        id_flags
+        + dup_flags
         + diff_flags
         + tx.flags
         + unmatched_flags
@@ -177,6 +226,8 @@ def reconcile(
         "gaps": dict(Counter(f.kind for f in gap_flags)),
         "anomalies": dict(Counter(f.kind for f in benford_flags + hug_flags + outlier_flags)),
         "llm": config.LLM_PROVIDER or None,
+        "gstins": id_stats,
+        "retyped_refs": retyped,
     }
 
     tables = {
@@ -220,4 +271,10 @@ def reconcile(
             [{"key": k, "value": json.dumps(v, default=str)} for k, v in summary.items()]
         ),
     }
+    say(
+        "match",
+        "done",
+        f"{len(m.pairs)} paired · {len(m.unmatched)} left · "
+        f"{summary['discrepancies']} discrepancies",
+    )
     return Reconciliation(tables, summary, flags)

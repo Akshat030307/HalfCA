@@ -329,14 +329,20 @@ Routes and toll plazas live in `data/routes.json`: city coordinates, plaza names
 
 | Method | Path | Returns |
 |---|---|---|
-| POST | `/upload` | multipart files → ingestion job result |
-| POST | `/reconcile?period=2026-09` | runs all engines, stores results |
+| GET | `/dataset` | current dataset: scenario, period, source files and record counts |
+| POST | `/upload` | multipart files (a dropped folder, loose files or a zip) → a **job** to poll; sources not sent are kept from the current dataset |
+| POST | `/upload/demo` | the "Use demo dataset" button: the demo's own files through the real ingestion path → job |
+| POST | `/reset` | regenerate the demo month (seed 2609) → job |
+| POST | `/reconcile?period=2026-09` | re-runs all engines on the stored dataset → job |
+| GET | `/jobs/{id}` | job progress: five steps (extract · gstin · normalise · road · match) with real details, files found, KPIs when done |
+| GET | `/invoices/{key}` | one invoice's four threads (books, bank, IMS, road) + flags; `key` = invoice_id or invoice number (slashes allowed) |
+| GET | `/demo-pack.zip` | the demo month as a folder: 5 sources + invoice PDFs + README |
 | GET | `/summary` | KPI counts, donut data, discrepancy-type counts |
 | GET | `/funnel` | per-stage in / paired / left |
 | GET | `/discrepancies?type=` | list with `evidence` |
 | GET | `/goods` | routes + per-invoice verdicts (for the map) |
-| GET | `/goods/{invoice_id}` | e-way bill, crossings, verdict, evidence |
-| GET | `/credit/graph` | nodes, edges, cycles, taint scores |
+| GET | `/goods/{key}` | e-way bill, crossings, verdict, evidence |
+| GET | `/credit/graph?scope=focus\|full` | nodes, edges, cycles, taint scores (focus = you, at-risk suppliers + chain, showcase suppliers, rings) |
 | GET | `/credit/supplier/{gstin}` | taint score, signals, invoices, ITC at risk |
 | GET | `/ims` | records + recommendation + reason |
 | POST | `/ims/approve` | bulk-approve accepts |

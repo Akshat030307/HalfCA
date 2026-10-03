@@ -13,6 +13,7 @@ frontend/next-env.d.ts
 *.tsbuildinfo
 
 # Data and secrets
+/demo-pack/
 /data/*
 !/data/.gitkeep
 .env

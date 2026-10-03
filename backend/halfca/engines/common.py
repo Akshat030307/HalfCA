@@ -37,6 +37,7 @@ KINDS: dict[str, tuple[str, str]] = {
     "threshold_hugging": ("anomaly", "Threshold hugging"),
     "outlier": ("anomaly", "Unusual invoice"),
     "transition_review": ("review", "GST 2.0 transition"),
+    "invalid_gstin": ("review", "Invalid GSTIN"),
 }
 DISCREPANCY_KINDS = [k for k, (c, _) in KINDS.items() if c == "discrepancy"]
 PHYSICAL_KINDS = [k for k, (c, _) in KINDS.items() if c == "physical"]

@@ -114,8 +114,9 @@ class DemoBuilder:
         self.s: dict[str, Firm] = {}
         for key, (name, city, prefix) in HERO_SUPPLIERS.items():
             kw = {"pan": "AAHCK3367Q", "gstin": "06AAHCK3367Q1ZW"} if key == "kaveri" else {}
+            tags = ["hero", "showcase"] if key in ("patel", "mehta", "singh") else ["hero"]
             self.s[key] = self.f.firm(
-                name, city, "supplier", registered_on=long_ago(), prefix=prefix, tags=["hero"], **kw
+                name, city, "supplier", registered_on=long_ago(), prefix=prefix, tags=tags, **kw
             )
         self.others_s = [self._supplier(city) for city in self._shuffled(OTHER_SUPPLIER_CITIES)]
         self.capital = self.f.firm(
@@ -645,7 +646,7 @@ class DemoBuilder:
         nb = NetworkBuilder(self.f, AS_OF)
         s = self.s
         named = [
-            nb.firm(n, 1, c)
+            nb.firm(n, 1, c, tags=["showcase"])
             for n, c in zip(NAMED_UPSTREAM, ["Jaipur", "Jaipur", "Ludhiana"], strict=True)
         ]
         nb.trade(named[0], s["patel"], 5, 1_80_000)

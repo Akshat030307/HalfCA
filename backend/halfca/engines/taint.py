@@ -55,6 +55,10 @@ def build_graph(
     return g
 
 
+def _sentence(text: str) -> str:
+    return text[:1].upper() + text[1:]
+
+
 def _shared_identity(cp: pd.DataFrame) -> dict[str, list[str]]:
     """GSTIN → descriptions of identity fields it shares with other GSTINs."""
     out: dict[str, list[str]] = defaultdict(list)
@@ -140,7 +144,7 @@ def analyse(
                     {
                         "signal": "shared_identity",
                         "weight": config.RISK_SHARED_IDENTITY,
-                        "text": "; ".join(shared[node]).capitalize(),
+                        "text": _sentence("; ".join(shared[node])),
                     }
                 )
             if int(x.returns_missed_6m) > 0:

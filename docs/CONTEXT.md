@@ -4,7 +4,7 @@ Read this before doing anything. It is the working memory of the project: where 
 how they run, what is decided, and what bites. `CLAUDE.md` is the product spec (what to
 build); `docs/PLAN.md` is the build order. This file is how to operate.
 
-Last updated: 2026-10-03, after M2 (commit `d26c7ab`).
+Last updated: 2026-10-03, after M3.
 
 ---
 
@@ -15,12 +15,12 @@ Last updated: 2026-10-03, after M2 (commit `d26c7ab`).
 | M0 foundations + deploy | ✅ | Live at https://halfca.akshatchowdhary.online |
 | M1 synthetic data | ✅ | Demo (seed 2609) + random mode, truth labels, DuckDB loader |
 | M2 engines | ✅ | Every demo-table number found by the engines; Groq stage-4 wired |
-| **M3 API + upload** | **next** | See §9 for the agreed scope |
-| M4 screens | todo | 9 screens, both themes |
+| M3 API + upload | ✅ | All endpoints, real folder upload with progress jobs, reset, demo pack with invoice PDFs |
+| **M4 screens** | **next** | 9 screens, both themes; start with Upload (folder drop) then Overview, Goods ★, Credit ★ |
 | M5 AI layer | todo | Copilot SSE, MCP server, LLM reasons, PDF extraction |
 | M6 ship | todo | PDF report, `make eval`, RUNBOOK, final deploy |
 
-Health right now: `make test` green (90 backend tests + frontend typecheck/lint).
+Health right now: `make test` green (102 backend tests + frontend typecheck/lint).
 The site shows the shell with placeholder screens; screens light up in M4.
 
 ## 2. Working with this user
@@ -114,13 +114,14 @@ code fingerprint changes and re-reconciles an uploaded dataset instead of replac
 - Logo: circle split top orange / bottom ink with "CA" half-inverted; wordmark "HALF CA".
 - Frontend is a static export: no server data fetching at runtime; screens fetch `/api/*` on the client (SWR). Dev uses Next rewrites; prod uses the Caddy proxy.
 
-## 9. Agreed scope for M3 (API + upload)
+## 9. API and upload (built in M3)
 
-- All endpoints in CLAUDE.md's API table, reading `res_*` tables; Pydantic models in `models.py` mirrored in `frontend/lib/api.ts`.
-- `POST /api/reconcile` re-runs the pipeline on the stored raw tables and atomically swaps the DB.
-- **Real folder ingest (user asked for this):** the Upload screen accepts a dropped folder or files → `POST /api/upload` parses them with `ingest/csv_loader` (kind detection by name/content), validates GSTINs, reconciles, and reports **real progress** to drive the step list. Reference data (counterparties, upstream, HSN, routes) stays server-side. A "Reset to demo data" action restores the demo. An upload replaces the shared dataset for everyone (no auth; fine for the demo).
-- `make demo-pack`: exports a ready-to-drag folder (e.g. `Arora Hardware – Sep 2026/`) with the five source files **plus a few realistic invoice PDFs** for the hero bills (user said yes), rendered with WeasyPrint.
-- Editing a value in the CSV before upload should visibly change the results (proves nothing is canned).
+- Routers in `backend/halfca/api/routers/`: `dataset`, `overview` (summary, funnel, discrepancies, invoice detail), `goods`, `credit` (graph, supplier, benford), `ims` (IMS, approve, liability), `jobs` (upload, demo, reset, reconcile, job polling, demo-pack.zip). Typed client: `frontend/lib/api.ts` (`api.*`, `fetcher` for SWR, `followJob`).
+- `api/state.py` keeps the current dataset in memory and reloads when the DuckDB file's inode/mtime changes. IMS approvals live in `data/state.json`, keyed by `dataset_id` (a new dataset clears them).
+- `api/jobs.py`: one job at a time (409 otherwise), steps `extract → gstin → normalise → road → match` with real details from `pipeline.reconcile(progress=…)`. Uploads are saved under `data/uploads/` (last 5 kept). Sources not uploaded are kept from the current dataset, so dropping one edited CSV works. Reference data always comes from the server.
+- `ingest/uploads.py` sorts a dropped folder/zip: data files by name then content, PDFs/images as documents, everything else ignored with a note. Wrong columns give a readable error.
+- Goods "beats" and the Credit focus graph are chosen from the data (biggest clean verified trip, biggest of each failure; `showcase`-tagged suppliers), and they land on the spec's heroes for the demo.
+- `make demo-pack` → `./demo-pack/Arora Hardware – Sep 2026/` (5 sources, 13 invoice PDFs, README). The app serves the same as `/api/demo-pack.zip`. PDFs are WeasyPrint-rendered GST tax invoices with a text layer, each marked synthetic.
 
 ## 10. Conventions that are easy to miss
 

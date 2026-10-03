@@ -48,6 +48,37 @@ ID_COLUMNS = {
 }
 
 
+REQUIRED = {
+    "invoices": [
+        "invoice_no",
+        "invoice_date",
+        "direction",
+        "supplier_gstin",
+        "supplier_name",
+        "buyer_gstin",
+        "buyer_name",
+        "supplier_state",
+        "place_of_supply",
+        "hsn",
+        "taxable_value",
+        "rate",
+        "cgst",
+        "sgst",
+        "igst",
+        "total",
+    ],
+    "bank": ["txn_id", "txn_date", "direction", "amount", "counterparty", "narration"],
+}
+
+
+def _require(df: pd.DataFrame, kind: str, path: Path) -> None:
+    missing = [c for c in REQUIRED[kind] if c not in df.columns]
+    if missing:
+        raise ValueError(
+            f"{path.name} does not look like a {kind} file: missing {', '.join(missing)}"
+        )
+
+
 def detect_kind(name: str, head: str = "") -> str | None:
     """Which source a file is, from its name first and its first bytes second."""
     n = name.lower()
@@ -82,8 +113,12 @@ def _typed(
 
 def read_invoices(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path, dtype={c: "string" for c in ID_COLUMNS}, keep_default_na=False)
+    _require(df, "invoices", path)
     for col in ("qty", "unit_price", "taxable_value", "rate", "cgst", "sgst", "igst", "total"):
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+        df[col] = pd.to_numeric(df[col], errors="coerce") if col in df.columns else 0.0
+    for col, default in (("description", ""), ("unit", "nos"), ("ewb_no", pd.NA)):
+        if col not in df.columns:
+            df[col] = default
     if "invoice_id" not in df.columns:
         df.insert(0, "invoice_id", [f"u{i:04d}" for i in range(1, len(df) + 1)])
     return _typed(df, dates=("invoice_date",))
@@ -91,6 +126,7 @@ def read_invoices(path: Path) -> pd.DataFrame:
 
 def read_bank(path: Path) -> pd.DataFrame:
     df = pd.read_csv(path, dtype={c: "string" for c in ID_COLUMNS}, keep_default_na=False)
+    _require(df, "bank", path)
     df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
     return _typed(df, dates=("txn_date",))
 
