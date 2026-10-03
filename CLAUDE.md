@@ -10,6 +10,10 @@ Half CA is a 24-hour hackathon build for **Problem Statement 2: Intelligent Tax 
 
 This file is the **complete spec**. The build order and deploy flow live in `docs/PLAN.md`.
 
+**Resuming work?** The handoff file below (imported automatically) has the current status, VPS access, workflow and gotchas. Keep it updated at the end of each milestone.
+
+@docs/CONTEXT.md
+
 ### Decisions that override the original brief (2026-10-03)
 
 - **Name:** the project is **Half CA** (it was "Chungi"). Python package `halfca`, domain `halfca.akshatchowdhary.online`.
