@@ -26,6 +26,7 @@ class DatasetInfo(BaseModel):
     sources: list[SourceFile]
     counts: dict[str, int]
     uploaded_files: list[str] = []
+    documents: dict[str, int] = {}  # invoice PDFs: documents, read, agree, differ, added, …
 
 
 # ── evidence and flags ───────────────────────────────────────────────────────

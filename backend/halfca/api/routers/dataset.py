@@ -38,6 +38,7 @@ def dataset_info(ds: Dataset) -> dict:
         ],
         "counts": counts,
         "uploaded_files": list(meta.get("uploaded_files") or []),
+        "documents": ds.summary.get("documents", {}).get("counts", {}),
     }
 
 

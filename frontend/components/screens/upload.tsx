@@ -73,6 +73,73 @@ function rowsFrom(job: Job | null, ds: DatasetInfo | undefined): Row[] {
   });
 }
 
+function docTone(note: string | null): Tone {
+  if (!note) return "idle";
+  if (note.includes("agrees") || note.includes("added")) return "ok";
+  if (note.startsWith("Not read")) return "idle";
+  return "warn";
+}
+
+/** 'Rohilkhand-Alloys_MB-0877.pdf' → 'MB-0877' */
+function docLabel(name: string): string {
+  const base = name.replace(/\.pdf$/i, "");
+  return base.includes("_") ? base.slice(base.lastIndexOf("_") + 1) : base;
+}
+
+function docSummary(c: Record<string, number>): string | null {
+  if (!c.documents) return null;
+  if (!c.read) return `${c.documents} invoice PDFs on file · not read (no AI model)`;
+  const bits = [`${c.read} of ${c.documents} PDFs read by AI`];
+  if (c.agree) bits.push(`${c.agree} agree with the register`);
+  if (c.differ) bits.push(`${c.differ} differ`);
+  if (c.added) bits.push(`${c.added} added as new invoices`);
+  if (c.needs_review) bits.push(`${c.needs_review} need review`);
+  return bits.join(" · ");
+}
+
+/** The invoice PDFs: one chip per document, coloured by what reading it found. */
+function Documents({ job, ds }: { job: Job | null; ds: DatasetInfo | undefined }) {
+  const docs = job?.files.filter((f) => f.kind === "document") ?? [];
+  const summary = job ? null : docSummary(ds?.documents ?? {});
+  if (!docs.length && !summary) return null;
+  return (
+    <div className="mt-3 rounded-2xl border-[1.5px] border-dashed border-line bg-panel/70 p-3">
+      <div className="mb-2 flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.12em] text-muted">
+        <Sparkles size={13} className="text-orange" /> Invoice PDFs · read by AI
+      </div>
+      {summary && <div className="text-[12.5px] text-muted">{summary}</div>}
+      <div className="flex flex-wrap gap-1.5">
+        {docs.map((d, i) => (
+          <motion.span
+            key={d.name}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.6 + i * 0.05 }}
+            title={`${d.name}: ${d.note ?? ""}`}
+          >
+            <Chip tone={docTone(d.note)} className="font-mono">
+              {docTone(d.note) === "ok" ? <Check size={11} strokeWidth={3} /> : null}
+              {docLabel(d.name)}
+            </Chip>
+          </motion.span>
+        ))}
+      </div>
+      {docs.some((d) => docTone(d.note) === "warn") && (
+        <ul className="mt-2 space-y-0.5 text-[12px] text-warn">
+          {docs
+            .filter((d) => docTone(d.note) === "warn")
+            .slice(0, 4)
+            .map((d) => (
+              <li key={d.name}>
+                <span className="font-mono">{docLabel(d.name)}</span>: {d.note}
+              </li>
+            ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /** Show the job's real progress, but let each step breathe on screen. */
 function usePacedSteps(job: Job | null): { steps: JobStep[]; finished: boolean } {
   // Pacing is keyed by job id, so a new job starts from step one without a reset effect.
@@ -213,6 +280,7 @@ export function UploadScreen() {
               })}
             </AnimatePresence>
           </ul>
+          <Documents job={job} ds={ds} />
           {ignored.length > 0 && (
             <p className="mt-3 text-[12px] text-muted">
               Ignored: {ignored.map((f) => f.name).join(", ")}

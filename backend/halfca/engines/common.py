@@ -21,6 +21,7 @@ KINDS: dict[str, tuple[str, str]] = {
     "tax_rate": ("discrepancy", "Tax rate"),
     "tax_head": ("discrepancy", "Tax head"),
     "tax_arith": ("discrepancy", "Tax maths"),
+    "document": ("discrepancy", "Invoice PDF"),
     "duplicate": ("duplicate", "Duplicate"),
     "near_duplicate": ("duplicate", "Near-duplicate"),
     "unmatched": ("unmatched", "Unmatched"),

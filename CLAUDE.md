@@ -24,6 +24,10 @@ This file is the **complete spec**. The build order and deploy flow live in `doc
 - **Stage 4 without an LLM:** skipped, so a no-LLM run shows 20 unmatched instead of 18. `test_demo_numbers` runs with a deterministic stub adjudicator.
 - **LLM provider: Groq** (OpenAI-compatible), model `openai/gpt-oss-120b`, set via `HALFCA_LLM_PROVIDER=groq` and `HALFCA_LLM_API_KEY` in `backend/.env` (local) and `/root/halfca/.env` (VPS). Calls run at temperature 0 and are cached on disk (`data/llm_cache.json`) by request hash, so re-runs are stable and free. Tests never call a model: `tests/conftest.py` blanks the provider and uses a deterministic stub adjudicator. Other providers (`openai`, `openrouter`, `ollama`) are one env change away.
 - **Deploy:** Docker Compose on the VPS, behind the VPS's shared Caddy. Docker is a deploy tool only; local dev never needs it.
+- **Invoice PDFs (M5):** the Groq key has no vision model, so a PDF's **text layer** (pypdf) is what `openai/gpt-oss-120b` reads, into a fixed schema. Python then checks every value against the document's own text (amounts written on it, invoice number and e-way bill verbatim, GSTINs present and checksum-valid, the date in some format); anything unbacked is dropped. Rates and totals are worked out in Python. Scans and images are marked `needs_review`. A PDF that disagrees with the register is a `document` discrepancy ("Invoice PDF"); a PDF missing from the register is added to it. Per upload: at most 25 documents, 180 s.
+- **IMS reasons stay templated** even with a key: they are the spec's exact one-liners and can never drift. The model explains them in the copilot instead.
+- **Copilot number guard (M5):** every number in a model-written answer must appear in a tool result, the question or the prompt's background facts. One rewrite is allowed, then the templated answer is used. The UI shows "✓ N numbers traced to tool output".
+- **MCP SDK v2:** `FastMCP` is now `mcp.server.mcpserver.MCPServer`; `halfca/mcp_server.py` uses it.
 
 ---
 
@@ -349,6 +353,7 @@ Routes and toll plazas live in `data/routes.json`: city coordinates, plaza names
 | GET | `/liability` | waterfall + net payable + by tax head |
 | GET | `/benford/{gstin}` | observed vs expected + MAD |
 | POST | `/copilot` | **SSE stream**: tool-call events, then answer tokens, then evidence links |
+| GET | `/copilot` | the copilot's tools, model (or none) and suggested questions |
 | GET | `/report.pdf` | audit report |
 
 Keep the Pydantic response models in `models.py` and mirror them in `frontend/lib/api.ts`.

@@ -57,8 +57,8 @@ def summary() -> dict:
     status = ds.res["invoices"].status.value_counts().to_dict()
     types = [
         {"kind": k, "label": KINDS[k][1], "count": int(s["discrepancy_types"].get(k, 0))}
-        for k in ("amount", "tax_rate", "invoice_id", "date", "tax_head", "tax_arith")
-        if k != "tax_arith" or s["discrepancy_types"].get(k, 0)
+        for k in ("amount", "tax_rate", "invoice_id", "date", "tax_head", "tax_arith", "document")
+        if k not in ("tax_arith", "document") or s["discrepancy_types"].get(k, 0)
     ]
     types.append({"kind": "duplicate", "label": "Duplicates", "count": int(s["duplicates"])})
     approved, _ = ims_approvals(ds.dataset_id)

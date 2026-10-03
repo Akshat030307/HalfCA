@@ -44,7 +44,7 @@ def configured() -> bool:
 def model_name() -> str | None:
     if not configured():
         return None
-    return config.LLM_MODEL or PROVIDERS[config.LLM_PROVIDER]["model"]
+    return config.LLM_MODEL or PROVIDERS.get(config.LLM_PROVIDER, {}).get("model")
 
 
 class _Cache:

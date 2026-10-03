@@ -14,6 +14,7 @@ export type DatasetInfo = {
   sources: SourceFile[];
   counts: Record<string, number>;
   uploaded_files: string[];
+  documents: Record<string, number>; // invoice PDFs: documents, read, agree, differ, …
 };
 
 // ── evidence and flags ───────────────────────────────────────────────────────

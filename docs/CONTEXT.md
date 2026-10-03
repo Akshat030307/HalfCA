@@ -4,7 +4,7 @@ Read this before doing anything. It is the working memory of the project: where 
 how they run, what is decided, and what bites. `CLAUDE.md` is the product spec (what to
 build); `docs/PLAN.md` is the build order. This file is how to operate.
 
-Last updated: 2026-10-03, after M4.
+Last updated: 2026-10-03, after M5.
 
 ---
 
@@ -17,11 +17,12 @@ Last updated: 2026-10-03, after M4.
 | M2 engines | ✅ | Every demo-table number found by the engines; Groq stage-4 wired |
 | M3 API + upload | ✅ | All endpoints, real folder upload with progress jobs, reset, demo pack with invoice PDFs |
 | M4 screens | ✅ | All 9 screens on live API data, both themes, 1280–1920 px |
-| **M5 AI layer** | **next** | Copilot SSE (UI shell exists in `components/screens/copilot.tsx`), MCP server, LLM reasons, PDF extraction |
-| M6 ship | todo | PDF report, `make eval`, RUNBOOK, final deploy |
+| M5 AI layer | ✅ | 7 tools, copilot SSE (Groq tool loop + number guard, templates without a key), MCP server, invoice PDFs read by AI and checked against the register |
+| **M6 ship** | **next** | PDF audit report (`GET /api/report.pdf`, `make report`, enable the Liability button), `make eval`, RUNBOOK, final deploy |
 
-Health right now: `make test` green (102 backend tests + frontend typecheck/lint).
-All 9 screens render real data. The audit-report button on Liability is disabled until M6.
+Health right now: `make test` green (134 backend tests + frontend typecheck/lint).
+All 9 screens render real data; the copilot answers with and without a key. The audit-report
+button on Liability is disabled until M6.
 
 ## 2. Working with this user
 
@@ -64,7 +65,12 @@ backend/
   halfca/data/           generator: scenario_demo, scenario_random, plans, network, derive, write, build (CLI), routes.json, hsn
   halfca/ingest/         gstin (checksum), normalise (invoice no + name_similarity), csv_loader (5 source formats)
   halfca/engines/        common (Flag/evidence), matching, dupes_gaps, tax, physical, taint, anomaly, liability
-  halfca/ai/             llm (OpenAI-compatible client + disk cache), adjudicate (stage 4), ims_autopilot
+  halfca/ai/             llm (OpenAI-compatible client, tool calls, disk cache), adjudicate (stage 4),
+                         ims_autopilot, copilot (tool loop + templates + number guard), warm (cache warm-up)
+  halfca/tools.py        the 7 tools (copilot + MCP share them)
+  halfca/mcp_server.py   MCP server on stdio (MCP SDK v2 `MCPServer`)
+  halfca/ingest/         + llm_extract (PDF text → schema → verified fields), documents (read + add to register)
+  halfca/engines/        + documents (invoice PDF vs register → `document` discrepancies)
   halfca/pipeline.py     runs all engines: raw_* frames → res_* tables + summary
   halfca/store.py        DuckDB: atomic save (temp file + rename), load_prefixed, meta
   halfca/api/            main.py (/api/health), routers/dataset.py (/api/dataset)
@@ -97,6 +103,13 @@ data/                    generated (gitignored): sources/, reference/, truth/, h
 - Models on this free key (checked 2026-10-03): `openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `qwen/qwen3.8-27b`, whisper, guard models. **No vision model** (no Llama 4), so PDF/image extraction needs testing in M5 or falls back to CSV.
 - Calls: temperature 0, JSON mode where structured, `reasoning_effort=low` for gpt-oss, retries on 429, cached in `data/llm_cache.json` by request hash.
 - The LLM never produces numbers; stage 4 accepts only a shortlisted voucher or "none".
+- **Free-tier limits (checked 2026-10-03): 8,000 tokens/minute and 1,000 requests/day per model.**
+  A copilot answer is ~3–6k tokens, a PDF read ~1k. Everything is cached by request hash, so
+  repeats are free and instant. Rate-limit waits: stage 4 and PDF reading wait up to 60 s,
+  the live copilot only 8 s and then falls back to the templated answer (with a note).
+- `ai/warm.py` runs in the background when the API starts with a key: it reads the 13 demo
+  PDFs and asks the 3 suggested questions, so the demo's AI moments are cache hits
+  (~4 min the first time on a fresh cache; then ~1 s). `HALFCA_WARM=0` turns it off; tests do.
 
 ## 7. The VPS
 
@@ -131,6 +144,30 @@ code fingerprint changes and re-reconciles an uploaded dataset instead of replac
 - `ingest/uploads.py` sorts a dropped folder/zip: data files by name then content, PDFs/images as documents, everything else ignored with a note. Wrong columns give a readable error.
 - Goods "beats" and the Credit focus graph are chosen from the data (biggest clean verified trip, biggest of each failure; `showcase`-tagged suppliers), and they land on the spec's heroes for the demo.
 - `make demo-pack` → `./demo-pack/Arora Hardware – Sep 2026/` (5 sources, 13 invoice PDFs, README). The app serves the same as `/api/demo-pack.zip`. PDFs are WeasyPrint-rendered GST tax invoices with a text layer, each marked synthetic.
+
+## 9b. AI layer (built in M5)
+
+- **Tools** (`halfca/tools.py`): the 7 spec tools over the current dataset. Money comes
+  pre-formatted (`₹4.2 L`, `₹1,18,000`) so the model never does arithmetic; every result has a
+  `headline` and an `evidence` list (`label`, `screen`, `href`). `supplier_risk` takes a name
+  ("Kaveri") or GSTIN; `trace_goods`/`explain` take invoice numbers. Errors come back as
+  `{"error": ...}`.
+- **Copilot** (`ai/copilot.py`, `POST /api/copilot` SSE, `GET /api/copilot` info): with a key,
+  a Groq tool loop (max 4 calls) then the model's answer, checked by the number guard; without
+  a key, intent rules pick the tools and templates write the answer. Events: `tool`,
+  `tool_done`, `token`, `evidence`, `done` (mode, model, numbers checked, note). The answer is
+  paced word by word (22 ms) from a cached completion, so the demo is stable.
+- **SSE gotchas:** Next dev gzip buffered the stream (fixed with `compress: false` in dev);
+  the web Caddy skips `encode` for `/api/copilot`.
+- **MCP:** `make mcp` (stdio). Add to Claude Code with
+  `claude mcp add halfca -- uv --directory /home/gingersnaps/HalfCA/backend run python -m halfca.mcp_server`.
+  Tool errors are raised as the SDK's `ToolError` so the client sees the message.
+- **Invoice PDFs:** a dropped folder/zip's PDFs (and the demo button's 13 demo-pack PDFs) are
+  read in the upload job's step 1 with live progress. Each file row says what reading found
+  ("agrees with the register", "differs: …", "added as a new invoice", "needs review: …").
+  `raw_documents` holds the extracted fields; uploads without PDFs keep the previous ones, so
+  editing an amount in the CSV and re-uploading makes the PDF disagree with the books.
+- IMS reasons stay templated on purpose (see CLAUDE.md decisions).
 
 ## 10. Conventions that are easy to miss
 

@@ -28,7 +28,7 @@ Why this shape:
 
 Each milestone ends green (`make test`), running locally, committed, and deployed.
 
-**Status (2026-10-03):** M0 ✅ live at https://halfca.akshatchowdhary.online · M1 ✅ demo + random generators · M2 ✅ all engines; `test_demo_numbers` green with the stub and with Groq · M3 ✅ API, real folder upload with progress, demo pack · M4 ✅ all 9 screens, both themes; 102 tests.
+**Status (2026-10-03):** M0 ✅ live at https://halfca.akshatchowdhary.online · M1 ✅ demo + random generators · M2 ✅ all engines; `test_demo_numbers` green with the stub and with Groq · M3 ✅ API, real folder upload with progress, demo pack · M4 ✅ all 9 screens, both themes · M5 ✅ copilot (Groq tool loop + number guard, templates without a key), MCP server, invoice PDFs read by AI; 134 tests.
 
 | # | Milestone | Delivers | Done when |
 |---|---|---|---|
@@ -72,5 +72,6 @@ Every redeploy: `make deploy`. Reset demo data on the server: `make deploy-reset
 
 ## Open items
 
-- ~~LLM provider~~ → Groq (`openai/gpt-oss-120b`), wired for stage 4 in M2. No vision model on this key yet; PDF extraction is checked in M5.
+- ~~LLM provider~~ → Groq (`openai/gpt-oss-120b`), wired for stage 4 in M2.
+- ~~PDF extraction without vision~~ → M5 reads the PDF text layer and verifies every value against it; scans/images go to review.
 - **Site protection** (basic auth at the web container) once a paid LLM key lives on the server.

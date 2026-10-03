@@ -7,6 +7,7 @@ import os
 
 os.environ["HALFCA_LLM_PROVIDER"] = ""
 os.environ["HALFCA_LLM_API_KEY"] = ""
+os.environ["HALFCA_WARM"] = "0"
 
 from datetime import datetime  # noqa: E402
 from pathlib import Path  # noqa: E402

@@ -89,5 +89,10 @@ HUG_HIGH = 49_999.0
 HUG_SHARE = 0.30
 ISOFOREST_CONTAMINATION = 0.02
 
+# ── Reading invoice PDFs (ingest/llm_extract.py) ─────────────────────────────
+EXTRACT_MAX_DOCS = 25  # per upload; more are listed as not read (free-tier token budget)
+EXTRACT_BUDGET_S = 180.0  # stop reading new documents after this long
+EXTRACT_MAX_CHARS = 6_000  # of a PDF's text layer sent to the model
+
 # ── Copilot ──────────────────────────────────────────────────────────────────
 COPILOT_MAX_TOOL_CALLS = 4

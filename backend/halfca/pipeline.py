@@ -1,7 +1,8 @@
 """Run every engine over the raw tables and produce the result tables (res_*).
 
   GSTIN checks → duplicates → physical trail → matching cascade → payment/IMS links
-  → field diffs → tax → gaps → credit taint → anomalies → IMS Autopilot → liability
+  → field diffs → tax → invoice PDFs vs register → gaps → credit taint → anomalies
+  → IMS Autopilot → liability
 
 Pure: frames in, frames out. Saving is the caller's job (store.save). An optional
 `progress(step, state, detail)` callback reports the steps the Upload screen shows:
@@ -22,7 +23,17 @@ import pandas as pd
 from halfca import config
 from halfca.ai.ims_autopilot import decide
 from halfca.data import routes as geo_mod
-from halfca.engines import anomaly, dupes_gaps, identity, liability, matching, physical, taint, tax
+from halfca.engines import (
+    anomaly,
+    documents,
+    dupes_gaps,
+    identity,
+    liability,
+    matching,
+    physical,
+    taint,
+    tax,
+)
 from halfca.engines.common import DISCREPANCY_KINDS, PHYSICAL_KINDS, Flag, counterparty, flags_frame
 from halfca.engines.matching import BOOK_TYPE, Adjudicator
 from halfca.ingest.normalise import normalise_invoice_no
@@ -102,6 +113,7 @@ def reconcile(
     ims_links = matching.link_ims(inv, ims, dups)
     diff_flags = dupes_gaps.field_diffs(inv, ledger, m.pairs, pay_links, bank, dup_of)
     tx = tax.verify(inv, frames["hsn_rates"])
+    doc_flags, doc_stats = documents.compare(frames.get("documents"), inv)
     unmatched_flags = dupes_gaps.unmatched_flags(m.unmatched, pay_links)
     gap_flags = dupes_gaps.gaps(inv, bank, ims, m.pairs, pay_links, ims_links, dup_of, as_of)
     tnt = taint.analyse(
@@ -116,6 +128,7 @@ def reconcile(
         + dup_flags
         + diff_flags
         + tx.flags
+        + doc_flags
         + unmatched_flags
         + gap_flags
         + phys.flags
@@ -228,6 +241,7 @@ def reconcile(
         "llm": config.LLM_PROVIDER or None,
         "gstins": id_stats,
         "retyped_refs": retyped,
+        "documents": doc_stats,
     }
 
     tables = {

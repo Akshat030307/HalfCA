@@ -2,14 +2,28 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from halfca import __version__, config
-from halfca.ai import llm
+from halfca.ai import llm, warm
 from halfca.api.routers import copilot, credit, dataset, goods, ims, jobs, overview
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    warm.start()  # background: cache the demo's PDF reads and copilot answers
+    yield
+
+
 app = FastAPI(
-    title="Half CA", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json"
+    title="Half CA",
+    version=__version__,
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json",
+    lifespan=lifespan,
 )
 
 

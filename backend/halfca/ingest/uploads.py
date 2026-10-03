@@ -60,6 +60,13 @@ def _unzip(path: Path, into: Path) -> list[Path]:
     return out
 
 
+def shown_name(p: Path) -> str:
+    """The name a user would recognise: unzipped files lose their ordering prefix."""
+    if p.parent.name == "unzipped" and re.match(r"^\d{4}-", p.name):
+        return p.name[5:]
+    return p.name
+
+
 def collect(paths: list[Path], workdir: Path) -> Collected:
     c = Collected()
     queue = list(paths)
@@ -67,7 +74,7 @@ def collect(paths: list[Path], workdir: Path) -> Collected:
     while queue:
         p = queue.pop(0)
         suffix = p.suffix.lower()
-        shown = p.name.split("-", 1)[1] if p.parent == unzip_dir and "-" in p.name else p.name
+        shown = shown_name(p)
         if suffix == ".zip":
             unzip_dir.mkdir(parents=True, exist_ok=True)
             queue.extend(_unzip(p, unzip_dir))

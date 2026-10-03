@@ -27,7 +27,7 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
-from halfca import config, tools
+from halfca import config, fmt, tools
 from halfca.ai import llm
 
 SUGGESTIONS = [
@@ -95,19 +95,7 @@ class Trace:
 
 # ── number guard: every figure in an answer must come from somewhere ─────────
 
-_NUM = re.compile(r"\d[\d,]*(?:\.\d+)?")
-
-
-def _norm(tok: str) -> str:
-    t = tok.strip(",").replace(",", "")
-    whole, _, frac = t.partition(".")
-    whole = whole.lstrip("0") or "0"
-    frac = frac.rstrip("0")
-    return f"{whole}.{frac}" if frac else whole
-
-
-def numbers(text: str) -> list[str]:
-    return [_norm(t) for t in _NUM.findall(text)]
+numbers = fmt.numbers_in
 
 
 def untraced(answer: str, sources: str) -> list[str]:
@@ -546,7 +534,11 @@ inter-state goods consignments over ₹50,000. Toll and upstream supplier data a
 
 
 def _llm(
-    question: str, history: list[dict[str, str]], trace: Trace, client: llm.LLMClient
+    question: str,
+    history: list[dict[str, str]],
+    trace: Trace,
+    client: llm.LLMClient,
+    patience: float = LLM_PATIENCE_S,
 ) -> Iterator[Event]:
     system = system_prompt()
     messages: list[dict[str, Any]] = [{"role": "system", "content": system}]
@@ -562,7 +554,7 @@ def _llm(
             tools=schemas,
             tool_choice="auto" if budget_left else "none",
             max_tokens=900,
-            max_wait=LLM_PATIENCE_S,
+            max_wait=patience,
         )
         if not msg["tool_calls"]:
             text = msg["content"].strip()
@@ -605,7 +597,7 @@ def _llm(
                 "Rewrite the answer using only numbers that appear in the tool results.",
             },
         ]
-        text = client.complete(messages, max_tokens=700, max_wait=LLM_PATIENCE_S)["content"].strip()
+        text = client.complete(messages, max_tokens=700, max_wait=patience)["content"].strip()
         bad = untraced(text, sources)
         if bad or not text:
             raise UntracedNumbers(bad)
@@ -643,6 +635,7 @@ def answer(
     *,
     pace: bool = True,
     client: llm.LLMClient | None = None,
+    patience: float = LLM_PATIENCE_S,
 ) -> Iterator[Event]:
     """Answer one question, streaming the working. Never raises: problems become a
     templated answer with a note."""
@@ -664,7 +657,7 @@ def answer(
     if client is not None:
         if _busy.acquire(timeout=20):
             try:
-                for ev in _llm(question, _clean_history(history), trace, client):
+                for ev in _llm(question, _clean_history(history), trace, client, patience):
                     if ev.type == "_answer":
                         text, checked, mode = ev.data["text"], ev.data["checked"], "llm"
                     else:

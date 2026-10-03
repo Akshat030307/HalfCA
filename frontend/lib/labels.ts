@@ -9,6 +9,7 @@ export const KIND_TONE: Record<string, Tone> = {
   tax_rate: "warn",
   tax_head: "warn",
   tax_arith: "warn",
+  document: "warn",
   duplicate: "dup",
   near_duplicate: "dup",
   unmatched: "idle",

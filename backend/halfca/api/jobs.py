@@ -23,8 +23,10 @@ from fastapi import HTTPException
 
 from halfca import config, store
 from halfca.data import build
+from halfca.data.demo_pack import FOLDER, demo_pack_zip
+from halfca.ingest import documents
 from halfca.ingest.csv_loader import read_reference, read_sources
-from halfca.ingest.uploads import UploadError, collect
+from halfca.ingest.uploads import UploadError, collect, shown_name
 
 STEPS = [
     ("extract", "Reading the files"),
@@ -195,15 +197,26 @@ def ingest_files(job: Job, paths: list[Path], workdir: Path, scenario: str) -> N
             frames[t] = base[t]
     if any(t not in frames for t in REFERENCE_TABLES):
         frames.update(read_reference(config.DATA_DIR / "reference"))
-    for d in found.documents:
-        job.files.append(
-            {
-                "name": d.name,
-                "kind": "document",
-                "records": None,
-                "note": "Invoice document; the invoice register carries its data",
-            }
+    if not meta:
+        raise UploadError("Generate the demo dataset first (it provides the reference data)")
+
+    n_inv = len(frames["invoices"])
+    n_docs = len(found.documents)
+    pdfs = f" and {n_docs} invoice PDFs" if n_docs else ""
+    job.step("extract", "running", label=f"Reading {n_inv} invoices{pdfs}")
+    if found.documents:
+        reads = documents.read_all(
+            [(p, shown_name(p)) for p in found.documents],
+            say=lambda msg: job.step("extract", "running", msg),
         )
+        names = dict(
+            zip(frames["counterparties"].gstin, frames["counterparties"].name, strict=True)
+        )
+        frames["invoices"], frames["documents"] = documents.add_missing(
+            reads, frames["invoices"], str(meta["user_gstin"]), names
+        )
+    elif "documents" in base:
+        frames["documents"] = base["documents"]
     for name in found.ignored:
         job.files.append(
             {
@@ -213,17 +226,7 @@ def ingest_files(job: Job, paths: list[Path], workdir: Path, scenario: str) -> N
                 "note": found.notes.get(name, "Ignored: not a recognised source"),
             }
         )
-
-    n_inv = len(frames["invoices"])
-    docs = f" and {len(found.documents)} invoice documents" if found.documents else ""
-    job.step(
-        "extract",
-        "done",
-        f"{len(found.sources)} of 5 sources uploaded{docs}",
-        label=f"Reading {n_inv} invoices{docs}",
-    )
-    if not meta:
-        raise UploadError("Generate the demo dataset first (it provides the reference data)")
+    job.step("extract", "done", f"{len(found.sources)} of 5 sources uploaded")
     meta = {
         **meta,
         "scenario": scenario,
@@ -237,6 +240,48 @@ def ingest_files(job: Job, paths: list[Path], workdir: Path, scenario: str) -> N
         label=f"Validating {summary['gstins']['checked']} GSTINs (state · PAN · check digit)",
     )
     job.kpis = _kpis(summary)
+    if found.documents:
+        _document_notes(job, found.documents, summary)
+
+
+DOC_NOTES = {
+    "agrees": "Read by AI · agrees with the register",
+    "added": "Read by AI · not in the register, added as a new invoice",
+    "differs": "Read by AI · differs from the register: {detail}",
+    "not_in_register": "Read by AI · not in the register",
+    "needs_review": "Needs review: {detail}",
+    "unread": "Not read: {detail}",
+}
+
+
+def _document_notes(job: Job, paths: list[Path], summary: dict[str, Any]) -> None:
+    """One file row per document, saying what reading it found; and the step's summary."""
+    docs = summary.get("documents", {})
+    by_file, counts = docs.get("by_file", {}), docs.get("counts", {})
+    for p in paths:
+        name = shown_name(p)
+        o = by_file.get(name, {"outcome": "unread", "detail": None})
+        note = DOC_NOTES[o["outcome"]].format(detail=(o.get("detail") or "").rstrip("."))
+        job.files.append({"name": name, "kind": "document", "records": None, "note": note})
+    read = counts.get("read", 0)
+    if read:
+        bits = [f"{read} PDFs read by {docs.get('model') or 'AI'}"]
+        for key, text in (
+            ("agree", "agree with the register"),
+            ("differ", "differ"),
+            ("added", "added as new invoices"),
+            ("needs_review", "need review"),
+        ):
+            if counts.get(key):
+                bits.append(f"{counts[key]} {text}")
+        detail = " · ".join(bits)
+    elif counts.get("needs_review"):
+        detail = f"{counts['needs_review']} documents need review"
+    else:
+        detail = f"{len(paths)} invoice PDFs kept · no AI model configured to read them"
+    for st in job.steps:
+        if st["key"] == "extract":
+            st["detail"] = f"{st['detail']} · {detail}" if st["detail"] else detail
 
 
 def upload_dir() -> Path:
@@ -254,7 +299,13 @@ def demo_job(job: Job) -> None:
         raise UploadError("The demo files are missing; run a reset first")
     work = upload_dir() / f"{datetime.now(UTC):%Y%m%d-%H%M%S}-demo-{job.job_id}"
     work.mkdir(parents=True)
-    ingest_files(job, sorted(src.iterdir()), work, scenario="demo")
+    paths = sorted(src.iterdir())
+    try:  # the demo pack's invoice PDFs, read through the same path as an upload
+        pack = demo_pack_zip()
+        paths += sorted((pack.parent / FOLDER / "invoices").glob("*.pdf"))
+    except Exception:  # no PDFs is fine: the register carries the data
+        traceback.print_exc()
+    ingest_files(job, paths, work, scenario="demo")
 
 
 def reset_job(job: Job) -> None:

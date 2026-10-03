@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 
 MINUS = "−"
@@ -64,3 +65,20 @@ def ewb(no: str) -> str:
     """3812 4471 0093"""
     s = str(no)
     return " ".join(s[i : i + 4] for i in range(0, len(s), 4))
+
+
+_NUM = re.compile(r"\d[\d,]*(?:\.\d+)?")
+
+
+def norm_number(tok: str) -> str:
+    """'1,18,000.00' → '118000', '0.820' → '0.82': one spelling per value."""
+    t = tok.strip(",").replace(",", "")
+    whole, _, frac = t.partition(".")
+    whole = whole.lstrip("0") or "0"
+    frac = frac.rstrip("0")
+    return f"{whole}.{frac}" if frac else whole
+
+
+def numbers_in(text: str) -> list[str]:
+    """Every number written in `text`, normalised (Indian or western grouping alike)."""
+    return [norm_number(t) for t in _NUM.findall(text)]
