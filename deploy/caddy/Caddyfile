@@ -6,7 +6,9 @@
 }
 
 :80 {
-	encode zstd gzip
+	# Compress everything except the copilot's event stream, which must flush per event.
+	@compressible not path /api/copilot
+	encode @compressible zstd gzip
 
 	handle /api/* {
 		request_body {

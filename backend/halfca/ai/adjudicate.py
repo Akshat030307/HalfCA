@@ -61,7 +61,9 @@ def llm_adjudicator(client: LLMClient) -> Adjudicator:
         messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}]
         for attempt in range(2):  # one retry on a malformed answer
             try:
-                raw = client.chat(messages, json_mode=True, max_tokens=600, cache=attempt == 0)
+                raw = client.chat(
+                    messages, json_mode=True, max_tokens=600, cache=attempt == 0, max_wait=60
+                )
                 data = json.loads(raw)
                 choice = str(data.get("choice", "")).strip()
                 conf = float(data.get("confidence", 0))

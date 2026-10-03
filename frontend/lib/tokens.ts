@@ -15,6 +15,7 @@ export const light = {
   dup: "#7C3AED",
   idle: "#64748B",
   bad: "#DC2626",
+  trace: "#0284C7",
 } as const;
 
 export const dark = {
@@ -31,6 +32,7 @@ export const dark = {
   dup: "#A78BFA",
   idle: "#94A3B8",
   bad: "#F87171",
+  trace: "#7DD3FC",
 } as const;
 
 export type Palette = { [K in keyof typeof light]: string };
@@ -50,4 +52,5 @@ export const cssVar = {
   dup: "var(--dup)",
   idle: "var(--idle)",
   bad: "var(--bad)",
+  trace: "var(--trace)",
 } as const;

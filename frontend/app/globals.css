@@ -20,6 +20,7 @@
   --dup: #7c3aed;
   --idle: #64748b;
   --bad: #dc2626;
+  --trace: #0284c7; /* copilot tool trace (light blue) */
 
   --on-orange: #1c130c;
   --card-border: 2px solid var(--ink);
@@ -46,6 +47,7 @@
   --dup: #a78bfa;
   --idle: #94a3b8;
   --bad: #f87171;
+  --trace: #7dd3fc;
 
   --on-orange: #000000;
   --card-border: 1.5px solid var(--line);
@@ -73,6 +75,7 @@
   --color-dup: var(--dup);
   --color-idle: var(--idle);
   --color-bad: var(--bad);
+  --color-trace: var(--trace);
 
   --font-display: var(--font-anton);
   --font-heading: var(--font-space-grotesk);

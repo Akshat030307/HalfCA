@@ -408,6 +408,7 @@ export const api = {
   approveIms: (imsIds?: string[]) =>
     post<ApproveResult>("/ims/approve", imsIds ? { ims_ids: imsIds } : {}),
   liability: () => request<Liability>("/liability"),
+  copilot: () => request<CopilotInfo>("/copilot"),
 
   /** Upload files (a dropped folder or loose files). Returns the job to poll. */
   upload: (files: File[]) => {
@@ -424,6 +425,66 @@ export const api = {
   job: (id: string) => request<Job>(`/jobs/${id}`),
   demoPackUrl: "/api/demo-pack.zip",
 };
+
+// ── copilot ──────────────────────────────────────────────────────────────────
+
+export type CopilotInfo = {
+  llm: string | null;
+  max_tool_calls: number;
+  suggestions: string[];
+  tools: { name: string; description: string }[];
+};
+export type ChatTurn = { role: "user" | "assistant"; content: string };
+export type EvidenceChip = { label: string; href: string };
+export type CopilotDone = {
+  mode: "llm" | "template" | "error";
+  model: string | null;
+  tool_calls: number;
+  numbers_checked?: number;
+  note: string | null;
+};
+export type CopilotEvent =
+  | { type: "tool"; data: { name: string; args: Record<string, unknown>; call: string } }
+  | { type: "tool_done"; data: { name: string; call: string; ok: boolean; headline: string } }
+  | { type: "token"; data: { text: string } }
+  | { type: "evidence"; data: { items: EvidenceChip[] } }
+  | { type: "done"; data: CopilotDone };
+
+/** POST /api/copilot and hand each server-sent event to `onEvent` as it arrives. */
+export async function askCopilot(
+  message: string,
+  history: ChatTurn[],
+  onEvent: (e: CopilotEvent) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  const res = await fetch("/api/copilot", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+    body: JSON.stringify({ message, history }),
+    signal,
+  });
+  if (!res.ok || !res.body) throw new ApiError(res.status, res.statusText || "Copilot failed");
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buf = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += value;
+    let cut = buf.indexOf("\n\n");
+    while (cut >= 0) {
+      const block = buf.slice(0, cut);
+      buf = buf.slice(cut + 2);
+      let type = "";
+      let data = "";
+      for (const line of block.split("\n")) {
+        if (line.startsWith("event: ")) type = line.slice(7);
+        else if (line.startsWith("data: ")) data += line.slice(6);
+      }
+      if (type && data) onEvent({ type, data: JSON.parse(data) } as CopilotEvent);
+      cut = buf.indexOf("\n\n");
+    }
+  }
+}
 
 /** Poll a job until it finishes, reporting every update. */
 export async function followJob(

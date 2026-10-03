@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # ── dataset ──────────────────────────────────────────────────────────────────
 
@@ -437,3 +437,28 @@ class JobOut(BaseModel):
     kpis: Kpis | None
     started_at: str
     finished_at: str | None
+
+
+# ── copilot ──────────────────────────────────────────────────────────────────
+
+
+class ChatTurn(BaseModel):
+    role: str  # user | assistant
+    content: str
+
+
+class CopilotIn(BaseModel):
+    message: str = Field(min_length=1, max_length=2000)
+    history: list[ChatTurn] = []
+
+
+class ToolInfo(BaseModel):
+    name: str
+    description: str
+
+
+class CopilotInfo(BaseModel):
+    llm: str | None
+    max_tool_calls: int
+    suggestions: list[str]
+    tools: list[ToolInfo]

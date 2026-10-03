@@ -6,7 +6,7 @@ from fastapi import FastAPI
 
 from halfca import __version__, config
 from halfca.ai import llm
-from halfca.api.routers import credit, dataset, goods, ims, jobs, overview
+from halfca.api.routers import copilot, credit, dataset, goods, ims, jobs, overview
 
 app = FastAPI(
     title="Half CA", version=__version__, docs_url="/api/docs", openapi_url="/api/openapi.json"
@@ -24,5 +24,5 @@ def health() -> dict[str, object]:
     }
 
 
-for module in (dataset, overview, goods, credit, ims, jobs):
+for module in (dataset, overview, goods, credit, ims, jobs, copilot):
     app.include_router(module.router, prefix="/api")

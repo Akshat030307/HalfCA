@@ -15,6 +15,8 @@ export default function config(phase: string): NextConfig {
       ...base,
       // FastAPI routes have no trailing slash; keep /api requests as they are.
       skipTrailingSlashRedirect: true,
+      // gzip buffers the copilot's server-sent events into one late chunk.
+      compress: false,
       async rewrites() {
         return [{ source: "/api/:path*", destination: `${api}/api/:path*` }];
       },
