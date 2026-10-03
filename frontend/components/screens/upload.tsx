@@ -23,6 +23,7 @@ import { cn } from "@/lib/cn";
 import { filesFromDrop } from "@/lib/drop";
 import { count } from "@/lib/format";
 import { useApi, useRefreshAll } from "@/lib/hooks";
+import { markUploaded, useUploaded } from "@/lib/session";
 
 const KIND: Record<string, { icon: typeof FileText; chip: string; tone: Tone; unit: string }> = {
   invoices: { icon: FileText, chip: "Invoices", tone: "neutral", unit: "invoices" },
@@ -184,7 +185,8 @@ export function UploadScreen() {
   const filesInput = useRef<HTMLInputElement>(null);
   const { steps, finished } = usePacedSteps(job);
   const busy = job?.status === "running" || (job !== null && job.status === "done" && !finished);
-  const rows = rowsFrom(job, ds);
+  const uploaded = useUploaded();
+  const rows = rowsFrom(job, uploaded ? ds : undefined);
   const ignored = job?.files.filter((f) => !f.kind) ?? [];
 
   useEffect(() => {
@@ -202,6 +204,7 @@ export function UploadScreen() {
     try {
       const final = await followJob(await start(), setJob);
       if (final.status === "error") setError(final.error ?? "Something went wrong");
+      else if (final.status === "done") markUploaded();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -239,9 +242,29 @@ export function UploadScreen() {
           <div className="mb-4 flex items-center justify-between">
             <h2 className="font-heading text-[15px] font-bold text-ink">The month&apos;s files</h2>
             <span className="text-[12px] text-muted">
-              {job ? "This upload" : ds ? `Loaded now · ${ds.scenario}` : "Loading…"}
+              {job
+                ? "This upload"
+                : uploaded && ds
+                  ? `Loaded now · ${ds.scenario}`
+                  : "Waiting for your files"}
             </span>
           </div>
+          {rows.length === 0 && (
+            <div className="flex flex-col items-center gap-2 rounded-2xl border-[1.5px] border-dashed border-line bg-panel/70 px-4 py-12 text-center">
+              {busy ? (
+                <Loader2 size={26} className="animate-spin text-orange" />
+              ) : (
+                <FolderOpen size={26} className="text-orange" />
+              )}
+              <div className="font-heading text-[15px] font-bold text-ink">
+                {busy ? "Reading your files…" : "Drop the month's folder here"}
+              </div>
+              <p className="max-w-xs text-[12.5px] text-muted">
+                Invoice register, bank statement, Tally day book, IMS feed and e-way bills. Invoice
+                PDFs in the folder are read by AI.
+              </p>
+            </div>
+          )}
           <ul className="space-y-3">
             <AnimatePresence initial>
               {rows.map((r, i) => {
@@ -280,7 +303,7 @@ export function UploadScreen() {
               })}
             </AnimatePresence>
           </ul>
-          <Documents job={job} ds={ds} />
+          <Documents job={job} ds={uploaded ? ds : undefined} />
           {ignored.length > 0 && (
             <p className="mt-3 text-[12px] text-muted">
               Ignored: {ignored.map((f) => f.name).join(", ")}

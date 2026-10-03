@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, X } from "lucide-react";
+import { Lock, Menu, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/cn";
 import { NAV } from "@/lib/nav";
+import { useUploaded } from "@/lib/session";
 
 import { Logo, LogoBadge } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
@@ -16,6 +17,7 @@ import { ThemeToggle } from "./theme-toggle";
 /** Logo, the nine screens and the theme toggle: the desktop sidebar and the phone menu. */
 function NavContents({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const uploaded = useUploaded();
   return (
     <>
       {/* A full page load: "/" is the landing page, served outside the Next app. */}
@@ -30,6 +32,7 @@ function NavContents({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="flex flex-col gap-1">
         {NAV.map((item) => {
           const active = pathname.startsWith(item.href.replace(/\/$/, ""));
+          const locked = uploaded !== true && item.href !== "/upload/";
           return (
             <Link
               key={item.href}
@@ -50,8 +53,18 @@ function NavContents({ onNavigate }: { onNavigate?: () => void }) {
               >
                 {item.letter}
               </span>
-              <span className="truncate">{item.label}</span>
-              {item.star && <span className="ml-auto pr-1 text-orange">★</span>}
+              <span className={cn("truncate", locked && !active && "opacity-60")}>
+                {item.label}
+              </span>
+              {locked ? (
+                <Lock
+                  size={12}
+                  className="ml-auto mr-1.5 shrink-0 text-muted/70"
+                  aria-label="Upload first"
+                />
+              ) : (
+                item.star && <span className="ml-auto pr-1 text-orange">★</span>
+              )}
             </Link>
           );
         })}

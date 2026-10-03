@@ -174,6 +174,10 @@ code fingerprint changes and re-reconciles an uploaded dataset instead of replac
 - `frontend/public/landing.html` is the user's own landing page (self-contained: Preact + htm
   inlined, Google Fonts from the CDN). It is served at `/` (web Caddy `rewrite / /landing.html`;
   Next dev `beforeFiles` rewrite). Edit it as a static file; it is not part of the Next app.
+- Each visitor starts empty: `UploadGate` (in the app layout) shows "Nothing here yet" on every
+  screen but Upload until `markUploaded()` runs after this tab's upload job finishes
+  (`sessionStorage` `halfca.uploaded`). Locked nav items show a lock. To test flows in
+  puppeteer, upload the demo pack files through the "Choose files" input first.
 - The Upload screen has only "Choose a folder", "Choose files", drag-and-drop and "Download
   sample folder". To restore the demo data on the server: `make deploy-reset`.
 
